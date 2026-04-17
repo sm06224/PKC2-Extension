@@ -13,13 +13,13 @@ PKC2 の **PKC-Message** プロトコル (`pkc-message` v1) を使う **単一 H
 ## Documentation
 
 - [IDEAS.md](./IDEAS.md) — カテゴリ別インデックス
-- [ideas/00-spec-revisions.md](./ideas/00-spec-revisions.md) — PKC-Message 仕様改定案 (SR-1 〜 SR-15)
-- [ideas/A-debugging.md](./ideas/A-debugging.md) — Debugging / Inspection ツール
-- [ideas/B-record-input.md](./ideas/B-record-input.md) — Record Input ツール
-- [ideas/C-record-output.md](./ideas/C-record-output.md) — Record Output ツール
-- [ideas/D-multi-pkc.md](./ideas/D-multi-pkc.md) — Multi-PKC / Bridge ツール
-- [ideas/E-specialized.md](./ideas/E-specialized.md) — 専門ユース向けツール
-- [ideas/F-file-viewers.md](./ideas/F-file-viewers.md) — **オフライン添付ビューア / リッチエディタ** (Word, PowerPoint, Mail, Mermaid, draw.io)
+- [ideas/00-spec-revisions/](./ideas/00-spec-revisions/) — PKC-Message 仕様改定案 (SR-1 〜 SR-15、個別ファイル)
+- [ideas/A-debugging/](./ideas/A-debugging/) — Debugging / Inspection ツール (A1-A5)
+- [ideas/B-record-input/](./ideas/B-record-input/) — Record Input ツール (B1-B15)
+- [ideas/C-record-output/](./ideas/C-record-output/) — Record Output ツール (C1-C8)
+- [ideas/D-multi-pkc/](./ideas/D-multi-pkc/) — Multi-PKC / Bridge ツール (D1-D6)
+- [ideas/E-specialized/](./ideas/E-specialized/) — 専門ユース向けツール (E1-E7)
+- [ideas/F-file-viewers/](./ideas/F-file-viewers/) — **オフライン添付ビューア / リッチエディタ** (F1-F10)
 
 ## Branch
 
