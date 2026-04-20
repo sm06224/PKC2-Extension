@@ -23,4 +23,5 @@ PKC2 から `export:request` / `export:result` でデータを取得し、
 | C5 | [printable-summary](C5-printable-summary.md) | 印刷向け整形 | Tier 3 |
 | C6 | [markdown-zipper](C6-markdown-zipper.md) | 各 record を MD ZIP | Tier 3 |
 | C7 | [tag-cloud](C7-tag-cloud.md) | タグ頻度可視化 | Tier 3 |
-| C8 | [relation-graph](C8-relation-graph.md) | relations をグラフ表示 | Tier 3 |
+| C8 | [relation-graph](C8-relation-graph.md) | relations をグラフ表示（standalone 可視化） | Tier 3 |
+| C9 | [graph-navigator](C9-graph-navigator.md) | relation + folder 階層の対話グラフ → 親 PKC2 の center pane に navigate | **Tier 2** ★ |
