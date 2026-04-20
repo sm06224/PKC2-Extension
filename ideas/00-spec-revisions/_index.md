@@ -42,3 +42,5 @@ type MessageType =
 | SR-13 | attachment body 規約 | [SR-13-attachment-body.md](SR-13-attachment-body.md) |
 | SR-14 | offer に mime/filename | [SR-14-offer-mime-filename.md](SR-14-offer-mime-filename.md) |
 | SR-15 | `asset:request/result` | [SR-15-asset-request.md](SR-15-asset-request.md) |
+| SR-16 | `data:changed` 通知 | [SR-16-data-change-notification.md](SR-16-data-change-notification.md) |
+| SR-17 | `selection:changed` 通知 | [SR-17-selection-change-notification.md](SR-17-selection-change-notification.md) |
