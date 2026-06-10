@@ -1,0 +1,20 @@
+/* C1 export-downloader — layout on top of shared/base.css. */
+
+.pkc-dl-root {
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.pkc-dl-header { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+.pkc-dl-title { font-weight: 600; font-size: 15px; }
+.pkc-dl-result { display: flex; gap: 12px; align-items: center; }
+
+.pkc-history-list { display: flex; flex-direction: column; gap: 2px; max-height: 240px; overflow-y: auto; }
+.pkc-history-row { display: flex; gap: 8px; font-size: 12px; align-items: baseline; }
+.pkc-history-time { color: var(--c-fg-dim); font-family: ui-monospace, monospace; flex: 0 0 auto; }
+.pkc-history-sent .pkc-history-text { color: var(--c-fg); }
+.pkc-history-result .pkc-history-text { color: var(--c-accent); }
+.pkc-history-note .pkc-history-text { color: var(--c-fg-dim); }
