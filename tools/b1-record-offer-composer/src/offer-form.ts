@@ -10,6 +10,9 @@
  */
 
 import { BODY_SIZE_CAP_BYTES, utf8ByteLength } from '../../shared/envelope';
+import { serializeTodoBody } from '../../shared/todo-body';
+
+export { serializeTodoBody };
 
 export const ARCHETYPES = [
   'text',
@@ -64,14 +67,6 @@ export function emptyOfferForm(): OfferFormState {
 export type OfferBuildResult =
   | { ok: true; payload: Record<string, unknown> }
   | { ok: false; error: string };
-
-/** PKC2 todo body (JSON stored as string): { status, description, date?, archived }. */
-export function serializeTodoBody(description: string, date: string): string {
-  const body: Record<string, unknown> = { status: 'open', description };
-  if (date !== '') body['date'] = date;
-  body['archived'] = false;
-  return JSON.stringify(body);
-}
 
 export function buildOfferPayload(f: OfferFormState, nowIso: () => string): OfferBuildResult {
   const title = f.title.trim();
