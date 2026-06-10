@@ -1,0 +1,22 @@
+/* A2 envelope-validator — layout on top of shared/base.css. */
+
+.pkc-val-root {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.pkc-val-header { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+.pkc-val-title { font-weight: 600; font-size: 15px; }
+.pkc-val-input { width: 100%; }
+
+.pkc-val-results { display: flex; flex-direction: column; gap: 4px; }
+.pkc-val-row { display: flex; gap: 8px; font-size: 13px; align-items: baseline; }
+.pkc-val-mark { flex: 0 0 auto; width: 1.2em; text-align: center; }
+.pkc-val-error { color: var(--c-danger); }
+.pkc-val-warn { color: var(--c-warn); }
+.pkc-val-ok { color: var(--c-accent); }
+.pkc-val-info { color: var(--c-fg-dim); }
+.pkc-val-text { white-space: pre-wrap; word-break: break-word; }
