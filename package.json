@@ -7,11 +7,12 @@
   "description": "PKC2 と PKC-Message で通信する単一 HTML ツール群(PKC2-Extensions)。各ツールは tools/<name>/ で開発し、dist/ に単一 HTML として出力する。",
   "scripts": {
     "build:a1": "vite build -c tools/a1-message-probe/vite.config.ts && node build/singlefile.mjs a1-message-probe",
+    "build:a2": "vite build -c tools/a2-envelope-validator/vite.config.ts && node build/singlefile.mjs a2-envelope-validator",
     "build:b1": "vite build -c tools/b1-record-offer-composer/vite.config.ts && node build/singlefile.mjs b1-record-offer-composer",
     "build:b2": "vite build -c tools/b2-todo-quick-sender/vite.config.ts && node build/singlefile.mjs b2-todo-quick-sender",
     "build:c1": "vite build -c tools/c1-export-downloader/vite.config.ts && node build/singlefile.mjs c1-export-downloader",
     "build:f7": "vite build -c tools/f7-mermaid-editor/vite.config.ts && node build/singlefile.mjs f7-mermaid-editor",
-    "build": "npm run build:a1 && npm run build:b1 && npm run build:b2 && npm run build:c1 && npm run build:f7",
+    "build": "npm run build:a1 && npm run build:a2 && npm run build:b1 && npm run build:b2 && npm run build:c1 && npm run build:f7",
     "test": "vitest run",
     "typecheck": "tsc --noEmit"
   },
