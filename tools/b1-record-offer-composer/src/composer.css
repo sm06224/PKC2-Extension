@@ -1,0 +1,33 @@
+/* B1 record-offer-composer — layout on top of shared/base.css. */
+
+.pkc-composer-root {
+  max-width: 780px;
+  margin: 0 auto;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.pkc-composer-header { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+.pkc-composer-title { font-weight: 600; font-size: 15px; }
+
+.pkc-v11-details { margin: 6px 0; }
+.pkc-v11-details > summary { cursor: pointer; }
+
+.pkc-preview-pre {
+  margin: 0;
+  font-family: ui-monospace, monospace;
+  font-size: 12px;
+  white-space: pre-wrap;
+  word-break: break-all;
+  color: var(--c-fg-dim);
+  max-height: 280px;
+  overflow-y: auto;
+}
+
+.pkc-history-list { display: flex; flex-direction: column; gap: 2px; max-height: 240px; overflow-y: auto; }
+.pkc-history-row { display: flex; gap: 8px; font-size: 12px; align-items: baseline; }
+.pkc-history-time { color: var(--c-fg-dim); font-family: ui-monospace, monospace; flex: 0 0 auto; }
+.pkc-history-sent .pkc-history-text { color: var(--c-fg); }
+.pkc-history-reject .pkc-history-text { color: var(--c-warn); }
+.pkc-history-note .pkc-history-text { color: var(--c-fg-dim); }

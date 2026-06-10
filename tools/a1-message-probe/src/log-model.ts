@@ -6,7 +6,7 @@
  * probe can never grow unbounded memory / DOM from a message flood.
  */
 
-import type { RejectCode } from './envelope';
+import type { RejectCode } from '../../shared/envelope';
 
 export type Direction = 'in' | 'out' | 'info';
 
