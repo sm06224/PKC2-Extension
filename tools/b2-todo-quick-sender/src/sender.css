@@ -1,0 +1,23 @@
+/* B2 todo-quick-sender — layout on top of shared/base.css. */
+
+.pkc-todo-root {
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.pkc-todo-header { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+.pkc-todo-title { font-weight: 600; font-size: 15px; }
+
+.pkc-todo-row { display: flex; gap: 6px; align-items: center; }
+.pkc-todo-input { font-size: 16px; padding: 8px 10px; }
+.pkc-todo-date { flex: 0 0 auto; width: 150px; }
+
+.pkc-history-list { display: flex; flex-direction: column; gap: 2px; max-height: 300px; overflow-y: auto; }
+.pkc-history-row { display: flex; gap: 8px; font-size: 12px; align-items: baseline; }
+.pkc-history-time { color: var(--c-fg-dim); font-family: ui-monospace, monospace; flex: 0 0 auto; }
+.pkc-history-sent .pkc-history-text { color: var(--c-fg); }
+.pkc-history-reject .pkc-history-text { color: var(--c-warn); }
+.pkc-history-note .pkc-history-text { color: var(--c-fg-dim); }

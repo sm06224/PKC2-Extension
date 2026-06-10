@@ -8,7 +8,8 @@
   "scripts": {
     "build:a1": "vite build -c tools/a1-message-probe/vite.config.ts && node build/singlefile.mjs a1-message-probe",
     "build:b1": "vite build -c tools/b1-record-offer-composer/vite.config.ts && node build/singlefile.mjs b1-record-offer-composer",
-    "build": "npm run build:a1 && npm run build:b1",
+    "build:b2": "vite build -c tools/b2-todo-quick-sender/vite.config.ts && node build/singlefile.mjs b2-todo-quick-sender",
+    "build": "npm run build:a1 && npm run build:b1 && npm run build:b2",
     "test": "vitest run",
     "typecheck": "tsc --noEmit"
   },
