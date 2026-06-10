@@ -1,0 +1,20 @@
+{
+  "name": "pkc2-extension-tools",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "license": "AGPL-3.0",
+  "description": "PKC2 と PKC-Message で通信する単一 HTML ツール群(PKC2-Extensions)。各ツールは tools/<name>/ で開発し、dist/ に単一 HTML として出力する。",
+  "scripts": {
+    "build:a1": "vite build -c tools/a1-message-probe/vite.config.ts && node build/singlefile.mjs a1-message-probe",
+    "build": "npm run build:a1",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "happy-dom": "^20.10.2",
+    "typescript": "^6.0.3",
+    "vite": "^8.0.16",
+    "vitest": "^4.1.8"
+  }
+}
