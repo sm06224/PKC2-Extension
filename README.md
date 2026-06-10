@@ -15,6 +15,8 @@ PKC2 の **PKC-Message** プロトコル (`pkc-message` v1) を使う **単一 H
 | ツール | issue | 配布物 | 概要 |
 |---|---|---|---|
 | A1 message-probe | #18 | `dist/pkc2-message-probe.html` | ping/pong + 全 envelope ロガー。record:offer / export:request / navigate / custom / raw envelope の送信テスト。launcher 起動・iframe 埋め込み両対応 |
+| B1 record-offer-composer | #23 | `dist/pkc2-offer-composer.html` | 任意 archetype の record:offer を組み立てて送信。live envelope プレビュー、todo body 自動 JSON 化、v1.1 capture フィールド、ドラフト自動保存 |
+| B2 todo-quick-sender | #24 | `dist/pkc2-todo-quick.html` | キーボードファーストの todo 専用送信。Enter で即 offer、送信後フォーカス復帰 |
 
 ### 使い方(A1 message-probe)
 
