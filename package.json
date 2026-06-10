@@ -7,7 +7,8 @@
   "description": "PKC2 と PKC-Message で通信する単一 HTML ツール群(PKC2-Extensions)。各ツールは tools/<name>/ で開発し、dist/ に単一 HTML として出力する。",
   "scripts": {
     "build:a1": "vite build -c tools/a1-message-probe/vite.config.ts && node build/singlefile.mjs a1-message-probe",
-    "build": "npm run build:a1",
+    "build:b1": "vite build -c tools/b1-record-offer-composer/vite.config.ts && node build/singlefile.mjs b1-record-offer-composer",
+    "build": "npm run build:a1 && npm run build:b1",
     "test": "vitest run",
     "typecheck": "tsc --noEmit"
   },

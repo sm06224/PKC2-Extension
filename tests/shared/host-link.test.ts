@@ -8,7 +8,7 @@ import {
   isFromHost,
   targetOriginOf,
   type HostLink,
-} from '../../tools/a1-message-probe/src/host-link';
+} from '../../tools/shared/host-link';
 
 describe('expectedOriginForUrl', () => {
   it('resolves http(s) URLs to their exact origin', () => {

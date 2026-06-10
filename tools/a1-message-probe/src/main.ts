@@ -29,7 +29,7 @@ import {
   validateEnvelope,
   type MessageType,
   type PongProfile,
-} from './envelope';
+} from '../../shared/envelope';
 import {
   detectAmbientHost,
   iframeLink,
@@ -37,7 +37,7 @@ import {
   isFromHost,
   sendToHost,
   type HostLink,
-} from './host-link';
+} from '../../shared/host-link';
 import { MessageLog, safeStringify, type EntryKind, type LogEntry } from './log-model';
 import { renderJsonTree } from './json-tree';
 

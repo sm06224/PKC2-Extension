@@ -6,7 +6,7 @@ import {
   parsePongProfile,
   utf8ByteLength,
   validateEnvelope,
-} from '../../tools/a1-message-probe/src/envelope';
+} from '../../tools/shared/envelope';
 
 function valid(): Record<string, unknown> {
   return {
