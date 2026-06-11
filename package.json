@@ -13,9 +13,12 @@
     "build:a5": "vite build -c tools/a5-replay-player/vite.config.ts && node build/singlefile.mjs a5-replay-player",
     "build:b1": "vite build -c tools/b1-record-offer-composer/vite.config.ts && node build/singlefile.mjs b1-record-offer-composer",
     "build:b2": "vite build -c tools/b2-todo-quick-sender/vite.config.ts && node build/singlefile.mjs b2-todo-quick-sender",
+    "build:b3": "vite build -c tools/b3-textlog-journaler/vite.config.ts && node build/singlefile.mjs b3-textlog-journaler",
+    "build:b13": "vite build -c tools/b13-pomodoro-logger/vite.config.ts && node build/singlefile.mjs b13-pomodoro-logger",
+    "build:b14": "vite build -c tools/b14-daily-log-starter/vite.config.ts && node build/singlefile.mjs b14-daily-log-starter",
     "build:c1": "vite build -c tools/c1-export-downloader/vite.config.ts && node build/singlefile.mjs c1-export-downloader",
     "build:f7": "vite build -c tools/f7-mermaid-editor/vite.config.ts && node build/singlefile.mjs f7-mermaid-editor",
-    "build": "npm run build:a1 && npm run build:a2 && npm run build:a3 && npm run build:a4 && npm run build:a5 && npm run build:b1 && npm run build:b2 && npm run build:c1 && npm run build:f7",
+    "build": "npm run build:a1 && npm run build:a2 && npm run build:a3 && npm run build:a4 && npm run build:a5 && npm run build:b1 && npm run build:b2 && npm run build:b3 && npm run build:b13 && npm run build:b14 && npm run build:c1 && npm run build:f7",
     "test": "vitest run",
     "typecheck": "tsc --noEmit"
   },

@@ -1,0 +1,12 @@
+/* B3 textlog-journaler — layout on top of shared/base.css. */
+
+.pkc-journal-root { max-width: 680px; margin: 0 auto; padding: 12px; display: flex; flex-direction: column; gap: 10px; }
+.pkc-journal-header { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+.pkc-journal-title { font-weight: 600; font-size: 15px; }
+.pkc-journal-input { font-size: 15px; padding: 8px 10px; }
+.pkc-journal-list { display: flex; flex-direction: column; gap: 2px; max-height: 320px; overflow-y: auto; }
+.pkc-journal-row { display: flex; gap: 8px; align-items: baseline; font-size: 13px; }
+.pkc-journal-text { flex: 1 1 auto; white-space: pre-wrap; word-break: break-word; }
+.pkc-history-list { display: flex; flex-direction: column; gap: 2px; margin-top: 6px; font-size: 12px; }
+.pkc-history-row { display: flex; gap: 8px; align-items: baseline; }
+.pkc-history-time { color: var(--c-fg-dim); font-family: ui-monospace, monospace; flex: 0 0 auto; }
