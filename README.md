@@ -25,9 +25,17 @@ PKC2 の **PKC-Message** プロトコル (`pkc-message` v1) を使う **単一 H
 | B6 csv-importer | #28 | `dist/pkc2-csv-importer.html` | CSV(ヘッダ行 + 列マッピング)を 1 行 = 1 offer で間隔送信(上限 200 行・停止可) |
 | B7 markdown-batch | #29 | `dist/pkc2-markdown-batch.html` | 複数 .md を 1 ファイル = 1 offer で送信(front-matter の title/archetype/source_url 解釈) |
 | B8 bookmark-importer | #30 | `dist/pkc2-bookmark-importer.html` | bookmarks.html をフォルダ階層付きで text offer 化(http(s) のみ・上限 200) |
+| B15 form-template | #37 | `dist/pkc2-form-template.html` | form archetype(name/note/checked 固定 3 フィールド)をテンプレから offer |
 | B13 pomodoro-logger | #35 | `dist/pkc2-pomodoro-logger.html` | 集中タイマー完了で textlog を自動 offer(時間帯・ラベル付き) |
 | B14 daily-log-starter | #36 | `dist/pkc2-daily-log-starter.html` | テンプレから今日の textlog をワンクリック offer |
 | C1 export-downloader | #38 | `dist/pkc2-export-downloader.html` | embedded ホストに export:request し、export:result の HTML をそのままファイル保存(描画・解析しない) |
+| E1 reading-list | #52 | `dist/pkc2-reading-list.html` | URL 読書管理(積読/読書中/読了)+ 項目ごとに source_url 付き offer |
+| E2 expense-tracker | #53 | `dist/pkc2-expense-tracker.html` | 記帳 → 「¥金額 内容 #カテゴリ」の textlog offer(form 固定 3 フィールドのため方針変更) |
+| E3 habit-tracker | #54 | `dist/pkc2-habit-tracker.html` | 習慣リスト → 今日の期日付き todo 群を一括生成 |
+| E4 meeting-notes | #55 | `dist/pkc2-meeting-notes.html` | 議事録テンプレ(日時/参加者/KPT 構成)→ text offer |
+| E5 gratitude-journal | #56 | `dist/pkc2-gratitude-journal.html` | 今日の感謝 3 つ → textlog offer |
+| E6 weekly-review | #57 | `dist/pkc2-weekly-review.html` | ISO 週番号タイトルの KPT レビュー → text offer |
+| E7 learning-cards | #58 | `dist/pkc2-learning-cards.html` | フラッシュカード作成・学習・デッキの text offer(往復書式) |
 | F7 mermaid-editor | #65 | `dist/pkc2-mermaid-editor.html` | Mermaid ライブ編集(テンプレ・テーマ・SVG/PNG 保存)。ソースを ```mermaid fence の text entry として offer(mermaid 同梱 ~3MB・オフライン) |
 
 ### 使い方(A1 message-probe)

@@ -1,0 +1,13 @@
+/* simple offer tool 共通レイアウト(shared/base.css の上)。 */
+
+.pkc-sot-root { max-width: 680px; margin: 0 auto; padding: 12px; display: flex; flex-direction: column; gap: 10px; }
+.pkc-sot-header { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+.pkc-sot-title { font-weight: 600; font-size: 15px; }
+.pkc-sot-root .pkc-panel > * { margin-top: 6px; }
+.pkc-sot-root .pkc-panel > *:first-child { margin-top: 0; }
+.pkc-sot-list { display: flex; flex-direction: column; gap: 2px; max-height: 300px; overflow-y: auto; font-size: 13px; }
+.pkc-sot-listrow { display: flex; gap: 8px; align-items: baseline; }
+.pkc-sot-grow { flex: 1 1 auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pkc-sot-status { color: var(--c-warn); flex: 0 0 auto; font-size: 12px; }
+.pkc-card-q { font-size: 16px; margin-bottom: 8px; }
+.pkc-card-a { font-size: 16px; color: var(--c-accent); margin-bottom: 8px; }
