@@ -7,6 +7,7 @@
 
 import '../../shared/base.css';
 import './daily.css';
+import { helpButton } from '../../shared/help';
 import { makeCorrelationId } from '../../shared/envelope';
 import { createHostConnection, type HostConnection } from '../../shared/host-connect';
 import { OfferTracker, offerStatusLabel } from '../../shared/offer-track';
@@ -57,6 +58,19 @@ export function mountDaily(root: HTMLElement): { conn: HostConnection } {
   header.setAttribute('data-pkc-region', 'daily-header');
   header.appendChild(el('span', 'pkc-daily-title', '🌅 PKC2 Daily Log Starter'));
   header.appendChild(el('span', 'pkc-hint', `${TOOL_NAME} v${TOOL_VERSION} — 今日の textlog をワンクリックで offer`));
+  header.appendChild(helpButton('Daily Log Starter', {
+    what: "今日の日付の textlog をテンプレからワンクリックで作るスターターです。",
+    how: [
+      "PKC2 に接続する",
+      "テンプレ(空 / 日報 / 朝会)を選ぶ",
+      "行を編集(1 行 = 1 ログ行。空行は無視)",
+      "「今日の textlog を offer」 → PKC2 側で accept",
+    ],
+    flow: [
+      "title は YYYY-MM-DD(曜)、body は textlog JSON({entries:[…]})で行順を維持して送信されます",
+    ],
+    notes: [],
+  }));
   root.appendChild(header);
 
   conn = createHostConnection({

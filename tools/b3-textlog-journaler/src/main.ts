@@ -9,6 +9,7 @@
 
 import '../../shared/base.css';
 import './journal.css';
+import { helpButton } from '../../shared/help';
 import { makeCorrelationId } from '../../shared/envelope';
 import { createHostConnection, type HostConnection } from '../../shared/host-connect';
 import { OfferTracker, offerStatusLabel } from '../../shared/offer-track';
@@ -92,6 +93,22 @@ export function mountJournaler(root: HTMLElement): { conn: HostConnection } {
   header.appendChild(
     el('span', 'pkc-hint', `${TOOL_NAME} v${TOOL_VERSION} — ローカルに連続追記し、まとめて 1 つの textlog として offer(v1 は既存 entry への追記不可)`),
   );
+  header.appendChild(helpButton('Textlog Journaler', {
+    what: "一日のメモをローカルに連続追記し、まとめて 1 つの textlog として PKC2 へ送る日誌ツールです。",
+    how: [
+      "メモを入力して Enter(タイムスタンプ付きで追記。localStorage に自動保存)",
+      "不要な行は ✕ で削除",
+      "日の終わりに「textlog として offer」(title 空欄なら今日の日付)",
+      "PKC2 側で accept されたら「ログをクリア」で翌日へ",
+    ],
+    flow: [
+      "ローカルの行が textlog body({entries:[{text, createdAt}…]})に直列化され、1 つの offer として送られます",
+      "v1 には既存 entry への追記経路が無いため、蓄積はローカルで行い最後にまとめて送る設計です",
+    ],
+    notes: [
+      "記録はこのブラウザの localStorage にあります(別ブラウザからは見えません)",
+    ],
+  }));
   root.appendChild(header);
 
   conn = createHostConnection({

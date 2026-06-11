@@ -15,6 +15,7 @@
 
 import '../../shared/base.css';
 import './editor.css';
+import { helpButton } from '../../shared/help';
 import mermaid from 'mermaid';
 import { createHostConnection, type HostConnection } from '../../shared/host-connect';
 import { button, el, selectInput, textInput } from '../../shared/ui';
@@ -80,6 +81,22 @@ export function mountMermaidEditor(root: HTMLElement): { conn: HostConnection } 
   header.appendChild(
     el('span', 'pkc-hint', `${TOOL_NAME} v${TOOL_VERSION} — mermaid v${__MERMAID_VERSION__} (MIT) 同梱・オフライン動作`),
   );
+  header.appendChild(helpButton('Mermaid Editor', {
+    what: "Mermaid 図をライブプレビューで編集し、ソースを text entry として PKC2 に保存できるオフラインエディタです。",
+    how: [
+      "テンプレボタン(Flowchart / Sequence …)か直接入力(500ms で自動描画)",
+      "テーマ切替、Copy SVG / Download SVG / Download PNG",
+      "「Save as Text」で title を付けて offer → PKC2 側で accept",
+    ],
+    flow: [
+      "offer される body は ```mermaid フェンスのコードブロックです。PKC2 ではコードとして表示され、本ツールに貼り直せば再編集できます(往復可能)",
+      "構文エラー時はエラーバーに表示し、直前の正常な図を保持します",
+    ],
+    notes: [
+      "SVG の attachment 化は v1 では不可(asset 同送禁止、spec §6.3)— SVG/PNG はローカル保存で代替",
+      "mermaid(MIT)同梱のためファイルサイズは約 3MB です",
+    ],
+  }));
   root.appendChild(header);
 
   const status = el('div', 'pkc-mmd-status');

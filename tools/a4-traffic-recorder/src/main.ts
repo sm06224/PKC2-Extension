@@ -10,6 +10,7 @@
 
 import '../../shared/base.css';
 import './recorder.css';
+import { helpButton } from '../../shared/help';
 import { buildCaptureFile, CAPTURE_EVENT_CAP, type CapturedEvent } from '../../shared/capture-format';
 import { createHostConnection, type HostConnection } from '../../shared/host-connect';
 import { button, el } from '../../shared/ui';
@@ -96,6 +97,24 @@ export function mountRecorder(root: HTMLElement): { conn: HostConnection } {
   header.appendChild(
     el('span', 'pkc-hint', `${TOOL_NAME} v${TOOL_VERSION} — この window に届く全メッセージ + 自分の送信を記録し JSON 保存(受信内容で動作は変えません)`),
   );
+  header.appendChild(helpButton('Traffic Recorder', {
+    what: "この window に届く全メッセージ(+自分の ping)を記録して JSON 保存するレコーダーです。A5 replay-player の入力を作ります。",
+    how: [
+      "PKC2 に接続する",
+      "⏺ 記録開始",
+      "PKC2 側を操作してトラフィックを発生させる(または「Ping を送って記録」で往復を含める)",
+      "⏹ 停止 → 💾 JSON 保存(pkc2-traffic-capture 形式)",
+    ],
+    flow: [
+      "window の message イベントを受動的に記録するだけで、内容で動作は変わりません",
+      "保存した JSON は A5 で任意のビルドに対して再生できます(回帰テストの軸)",
+    ],
+    notes: [
+      "上限 5,000 件(超過分は破棄数を表示)",
+      "非 PKC メッセージはトグルで含める",
+      "他ツール同士の通信は記録できません(この window に届くものだけ)",
+    ],
+  }));
   root.appendChild(header);
 
   conn = createHostConnection({

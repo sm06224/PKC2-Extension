@@ -9,6 +9,7 @@
 
 import '../../shared/base.css';
 import './pomodoro.css';
+import { helpButton } from '../../shared/help';
 import { makeCorrelationId } from '../../shared/envelope';
 import { createHostConnection, type HostConnection } from '../../shared/host-connect';
 import { OfferTracker, offerStatusLabel } from '../../shared/offer-track';
@@ -92,6 +93,22 @@ export function mountPomodoro(root: HTMLElement): { conn: HostConnection } {
   header.setAttribute('data-pkc-region', 'pomo-header');
   header.appendChild(el('span', 'pkc-pomo-title', '🍅 PKC2 Pomodoro Logger'));
   header.appendChild(el('span', 'pkc-hint', `${TOOL_NAME} v${TOOL_VERSION} — タイマー完了で textlog を自動 offer`));
+  header.appendChild(helpButton('Pomodoro Logger', {
+    what: "集中タイマーです。完了すると「🍅 N分集中(HH:MM〜HH:MM): ラベル」を textlog として自動 offer します。",
+    how: [
+      "PKC2 に接続する(未接続だと完了しても送信されません)",
+      "時間(25/50/15/5/1 分)とラベルを選んで ▶ スタート",
+      "完了すると自動で offer → PKC2 側 banner で accept",
+      "「記録したセッション」で到達 / 受理を確認",
+    ],
+    flow: [
+      "送信されるのは完了時のみ。⏹ 中断は記録されません",
+      "未接続での完了は送信せずその旨を表示します(fire-and-forget の取りこぼし防止)",
+    ],
+    notes: [
+      "タブを閉じるとタイマーも止まります",
+    ],
+  }));
   root.appendChild(header);
 
   conn = createHostConnection({

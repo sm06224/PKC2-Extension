@@ -9,6 +9,7 @@
 
 import '../../shared/base.css';
 import './importer.css';
+import { helpButton } from '../../shared/help';
 import { sendBatch, parseCsv, type BatchHandle, type BatchRow } from '../../shared/batch-offer';
 import { createHostConnection, type HostConnection } from '../../shared/host-connect';
 import { OfferTracker, offerStatusLabel } from '../../shared/offer-track';
@@ -137,6 +138,23 @@ export function mountCsvImporter(root: HTMLElement): { conn: HostConnection } {
   headerEl.setAttribute('data-pkc-region', 'csv-header');
   headerEl.appendChild(el('span', 'pkc-imp-title', '📑 PKC2 CSV Importer'));
   headerEl.appendChild(el('span', 'pkc-hint', `${TOOL_NAME} v${TOOL_VERSION} — CSV の各行を record:offer に(accept は host 側で 1 件ずつ)`));
+  headerEl.appendChild(helpButton('CSV Importer', {
+    what: "CSV の各行を record:offer に変換して間隔送信する一括投入ツールです。",
+    how: [
+      "PKC2 に接続する",
+      "CSV ファイルを選択(1 行目はヘッダ)",
+      "title 列 / body 列 / archetype を選ぶ(残り列は「- 列名: 値」として body に畳み込み可)",
+      "「一括 offer」 — 600ms 間隔で送信、⏹ でいつでも停止",
+    ],
+    flow: [
+      "1 行ずつ correlation_id 付きで offer し、「オファー状況」で行ごとの到達 / 受理を追跡できます",
+      "間隔 600ms ≒ 100 件/分は host の flood guard(120/分)の内側です",
+    ],
+    notes: [
+      "上限 200 行・title が空の行はスキップ",
+      "accept は host 側で 1 件ずつ必要(spec §6.2)— 大量投入時は banner も大量に積まれます",
+    ],
+  }));
   root.appendChild(headerEl);
 
   conn = createHostConnection({
