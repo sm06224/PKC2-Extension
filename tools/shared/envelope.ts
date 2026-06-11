@@ -12,11 +12,16 @@
 export const PROTOCOL = 'pkc-message' as const;
 export const VERSION = 1 as const;
 
-/** spec §4.1 / §7 — the 9 known message types of v1. */
+/**
+ * spec §4.1 / §7 — the known message types. `record:ack` is the v1.x
+ * additive delivery confirmation (PKC2#804, host→sender); old hosts never
+ * send it and reject it as INVALID_TYPE if sent to them.
+ */
 export const KNOWN_TYPES = [
   'ping',
   'pong',
   'record:offer',
+  'record:ack',
   'record:accept',
   'record:reject',
   'export:request',
@@ -34,6 +39,12 @@ export interface Envelope {
   target_id: string | null;
   payload: unknown;
   timestamp: string;
+  /**
+   * v1.x additive (PKC2#804): sender-chosen id echoed by the host in
+   * record:ack / record:reject / record:accept, making offer round-trips
+   * correlatable. Old hosts ignore it (spec §9.4 unknown-field rule).
+   */
+  correlation_id?: string;
 }
 
 /** spec §4.3 — envelope-level reject codes. */
@@ -92,9 +103,9 @@ export function formatReasons(reasons: RejectReason[]): string {
 export function buildEnvelope(
   type: MessageType,
   payload: unknown,
-  opts?: { sourceId?: string | null; targetId?: string | null },
+  opts?: { sourceId?: string | null; targetId?: string | null; correlationId?: string },
 ): Envelope {
-  return {
+  const envelope: Envelope = {
     protocol: PROTOCOL,
     version: VERSION,
     type,
@@ -103,6 +114,15 @@ export function buildEnvelope(
     payload,
     timestamp: new Date().toISOString(),
   };
+  if (opts?.correlationId !== undefined) envelope.correlation_id = opts.correlationId;
+  return envelope;
+}
+
+/** Correlation id for offer round-trips (PKC2#804). Same fallback as the host launcher. */
+export function makeCorrelationId(): string {
+  const c = (globalThis as { crypto?: Crypto }).crypto;
+  if (c && typeof c.randomUUID === 'function') return c.randomUUID();
+  return `c-${Math.random().toString(36).slice(2)}-${Date.now().toString(36)}`;
 }
 
 /** spec §5.2 PongProfile — fields are additive-only within v1. */

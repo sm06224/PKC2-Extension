@@ -25,6 +25,7 @@ import {
   BODY_SIZE_CAP_UTF16_UNITS,
   buildEnvelope,
   formatReasons,
+  makeCorrelationId,
   parsePongProfile,
   validateEnvelope,
   type MessageType,
@@ -148,12 +149,15 @@ function note(text: string, data?: unknown): void {
 
 /* ------------------------------------------------------------ messaging */
 
-function sendEnvelope(type: MessageType, payload: unknown): void {
+function sendEnvelope(type: MessageType, payload: unknown, opts?: { correlationId?: string }): void {
   if (!state.link) {
     note(`送信失敗: ホスト未接続(${type})`);
     return;
   }
-  const envelope = buildEnvelope(type, payload, { sourceId: TOOL_ID });
+  const envelope = buildEnvelope(type, payload, {
+    sourceId: TOOL_ID,
+    ...(opts?.correlationId !== undefined ? { correlationId: opts.correlationId } : {}),
+  });
   const ok = sendToHost(state.link, envelope);
   log.push({
     at: envelope.timestamp,
@@ -512,7 +516,9 @@ function buildOfferComposer(): HTMLElement {
     if (archetype.value !== '') payload['archetype'] = archetype.value;
     if (sourceUrl.value.trim() !== '') payload['source_url'] = sourceUrl.value.trim();
     if (capturedNow.checked) payload['captured_at'] = new Date().toISOString();
-    sendEnvelope('record:offer', payload);
+    // PKC2#804(v1.x): correlation_id を自動付与 — 対応 host は ack/reject/
+    // accept に echo するので、ログ上で往復を突き合わせられる。
+    sendEnvelope('record:offer', payload, { correlationId: makeCorrelationId() });
   });
 
   box.appendChild(fieldRow('title', title));

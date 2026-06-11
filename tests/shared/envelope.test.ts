@@ -4,6 +4,7 @@ import {
   buildEnvelope,
   formatReasons,
   KNOWN_TYPES,
+  makeCorrelationId,
   parsePongProfile,
   validateEnvelope,
 } from '../../tools/shared/envelope';
@@ -86,6 +87,24 @@ describe('buildEnvelope', () => {
     expect(e.source_id).toBe('ext:probe');
     expect(e.target_id).toBeNull();
     expect(new Date(e.timestamp).getTime()).not.toBeNaN();
+    expect('correlation_id' in e).toBe(false); // 指定なしでは field 自体を持たない
+  });
+
+  it('carries correlation_id when provided (v1.x additive, PKC2#804)', () => {
+    const e = buildEnvelope('record:offer', { title: 't', body: 'b' }, { sourceId: 'x', correlationId: 'c-1' });
+    expect(e.correlation_id).toBe('c-1');
+    expect(validateEnvelope(e).ok).toBe(true); // 旧 host 検証でも有効(unknown field 互換)
+  });
+
+  it('makeCorrelationId yields distinct ids', () => {
+    expect(makeCorrelationId()).not.toBe(makeCorrelationId());
+  });
+});
+
+describe("record:ack (v1.x additive type, PKC2#804)", () => {
+  it('is a KNOWN type for the extension fleet (new hosts send it)', () => {
+    const r = validateEnvelope({ ...valid(), type: 'record:ack' });
+    expect(r.ok).toBe(true);
   });
 });
 

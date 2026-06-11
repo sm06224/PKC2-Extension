@@ -53,7 +53,7 @@ describe('todo quick sender', () => {
     pressEnter(desc);
 
     expect(sentToHost.length).toBe(1);
-    const env = sentToHost[0] as { type: string; payload: { title: string; body: string; archetype: string } };
+    const env = sentToHost[0] as { type: string; correlation_id?: string; payload: { title: string; body: string; archetype: string } };
     expect(env.type).toBe('record:offer');
     expect(env.payload.archetype).toBe('todo');
     expect(env.payload.title).toBe('牛乳を買う');
@@ -66,7 +66,26 @@ describe('todo quick sender', () => {
 
     expect(desc.value).toBe('');
     expect(date.value).toBe('2026-06-12'); // 期日は連投のため保持
-    expect(root.querySelector('[data-pkc-region="todo-history"]')?.textContent).toContain('牛乳を買う');
+    expect(env.correlation_id).toBeTypeOf('string'); // PKC2#804: 自動付与
+    expect(root.querySelector('[data-pkc-region="todo-offers"]')?.textContent).toContain('牛乳を買う');
+  });
+
+  it('ack updates the offer row to 到達 (PKC2#804)', () => {
+    const env = sentToHost[0] as { correlation_id: string };
+    conn.handleMessage({
+      data: {
+        protocol: 'pkc-message',
+        version: 1,
+        type: 'record:ack',
+        source_id: null,
+        target_id: null,
+        payload: { offer_id: 'o-1', correlation_id: env.correlation_id },
+        timestamp: new Date().toISOString(),
+      },
+      origin: 'http://host.test',
+      source: fakeHostWindow as unknown as MessageEventSource,
+    });
+    expect(root.querySelector('[data-pkc-region="todo-offers"]')?.textContent).toContain('到達');
   });
 
   it('rejects empty description with an inline error and sends nothing', () => {

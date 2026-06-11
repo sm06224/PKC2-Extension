@@ -56,7 +56,7 @@ export interface HostConnection {
   getStatus(): ConnStatus;
   getProfile(): PongProfile | null;
   /** Build + send a v1 envelope. Returns it, or null when no host / send failed. */
-  send(type: MessageType, payload: unknown): Envelope | null;
+  send(type: MessageType, payload: unknown, opts?: { correlationId?: string }): Envelope | null;
   ping(): void;
   /** Exposed for tests and for tools that manage their own link. */
   attachLink(link: HostLink): void;
@@ -157,12 +157,19 @@ export function createHostConnection(opts: HostConnectionOptions): HostConnectio
     ping();
   }
 
-  function send(type: MessageType, payload: unknown): Envelope | null {
+  function send(
+    type: MessageType,
+    payload: unknown,
+    sendOpts?: { correlationId?: string },
+  ): Envelope | null {
     if (!link) {
       opts.onNote?.(`送信失敗: ホスト未接続(${type})`);
       return null;
     }
-    const envelope = buildEnvelope(type, payload, { sourceId: opts.sourceId });
+    const envelope = buildEnvelope(type, payload, {
+      sourceId: opts.sourceId,
+      ...(sendOpts?.correlationId !== undefined ? { correlationId: sendOpts.correlationId } : {}),
+    });
     return sendToHost(link, envelope) ? envelope : null;
   }
 

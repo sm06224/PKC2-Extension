@@ -62,6 +62,13 @@ export function lintEnvelope(raw: string): Finding[] {
   if (typeof d['timestamp'] === 'string' && Number.isNaN(new Date(d['timestamp']).getTime())) {
     findings.push({ level: 'warn', text: 'timestamp が ISO 8601 として解釈できません' });
   }
+  if ('correlation_id' in d) {
+    if (typeof d['correlation_id'] === 'string') {
+      findings.push({ level: 'info', text: 'correlation_id あり(v1.x additive、PKC2#804)— 対応 host は ack/reject/accept に echo、旧 host は無視' });
+    } else {
+      findings.push({ level: 'warn', text: 'correlation_id は string を推奨(string 以外は host が無視)' });
+    }
+  }
 
   // Type-specific payload checks.
   const payload = d['payload'];
@@ -104,12 +111,13 @@ export function lintEnvelope(raw: string): Finding[] {
     }
     case 'pong':
     case 'export:result':
+    case 'record:ack':
     case 'record:reject': {
       findings.push({ level: 'info', text: `${String(d['type'])} は host → sender 方向の type です(sender から送るものではありません)` });
       break;
     }
     case 'record:accept': {
-      findings.push({ level: 'info', text: 'record:accept は v1 では type 予約のみ・未実装(§7.3)' });
+      findings.push({ level: 'info', text: 'record:accept は host → sender 方向。v1.0 は type 予約のみ(§7.3)、v1.x で wire-up(PKC2#804)' });
       break;
     }
     case 'custom': {
