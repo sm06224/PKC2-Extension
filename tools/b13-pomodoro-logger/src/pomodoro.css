@@ -1,0 +1,15 @@
+/* B13 pomodoro-logger — layout on top of shared/base.css. */
+
+.pkc-pomo-root { max-width: 620px; margin: 0 auto; padding: 12px; display: flex; flex-direction: column; gap: 10px; }
+.pkc-pomo-header { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+.pkc-pomo-title { font-weight: 600; font-size: 15px; }
+.pkc-pomo-display {
+  font-family: ui-monospace, monospace;
+  font-size: 56px;
+  text-align: center;
+  letter-spacing: 0.08em;
+  margin: 12px 0;
+  color: var(--c-accent);
+}
+.pkc-history-list { display: flex; flex-direction: column; gap: 2px; font-size: 12px; }
+.pkc-history-row { display: flex; gap: 8px; align-items: baseline; }

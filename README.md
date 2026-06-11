@@ -21,6 +21,9 @@ PKC2 の **PKC-Message** プロトコル (`pkc-message` v1) を使う **単一 H
 | A5 replay-player | #22 | `dist/pkc2-replay-player.html` | A4 / A1 のキャプチャを接続中 host へ順次再送(間隔調整・in/foreign は opt-in) |
 | B1 record-offer-composer | #23 | `dist/pkc2-offer-composer.html` | 任意 archetype の record:offer を組み立てて送信。live envelope プレビュー、todo body 自動 JSON 化、v1.1 capture フィールド、ドラフト自動保存、correlation_id で ack/accept/reject を相関表示(PKC2#804) |
 | B2 todo-quick-sender | #24 | `dist/pkc2-todo-quick.html` | キーボードファーストの todo 専用送信。Enter で即 offer、送信後フォーカス復帰、オファー状況の相関表示(PKC2#804) |
+| B3 textlog-journaler | #25 | `dist/pkc2-textlog-journaler.html` | ローカルに連続追記(localStorage 保持)→ まとめて 1 つの textlog として offer |
+| B13 pomodoro-logger | #35 | `dist/pkc2-pomodoro-logger.html` | 集中タイマー完了で textlog を自動 offer(時間帯・ラベル付き) |
+| B14 daily-log-starter | #36 | `dist/pkc2-daily-log-starter.html` | テンプレから今日の textlog をワンクリック offer |
 | C1 export-downloader | #38 | `dist/pkc2-export-downloader.html` | embedded ホストに export:request し、export:result の HTML をそのままファイル保存(描画・解析しない) |
 | F7 mermaid-editor | #65 | `dist/pkc2-mermaid-editor.html` | Mermaid ライブ編集(テンプレ・テーマ・SVG/PNG 保存)。ソースを ```mermaid fence の text entry として offer(mermaid 同梱 ~3MB・オフライン) |
 

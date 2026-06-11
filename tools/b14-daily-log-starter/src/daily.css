@@ -1,0 +1,8 @@
+/* B14 daily-log-starter — layout on top of shared/base.css. */
+
+.pkc-daily-root { max-width: 620px; margin: 0 auto; padding: 12px; display: flex; flex-direction: column; gap: 10px; }
+.pkc-daily-header { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+.pkc-daily-title { font-weight: 600; font-size: 15px; }
+.pkc-daily-root .pkc-panel > * { margin-top: 6px; }
+.pkc-history-list { display: flex; flex-direction: column; gap: 2px; font-size: 12px; }
+.pkc-history-row { display: flex; gap: 8px; align-items: baseline; }
