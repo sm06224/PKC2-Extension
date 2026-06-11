@@ -14,8 +14,7 @@ import {
   buildEnvelope,
   validateEnvelope,
   KNOWN_TYPES,
-  BODY_SIZE_CAP_BYTES,
-  utf8ByteLength,
+  BODY_SIZE_CAP_UTF16_UNITS,
 } from '../../shared/envelope';
 import { button, el } from '../../shared/ui';
 
@@ -39,7 +38,12 @@ export function lintEnvelope(raw: string): Finding[] {
 
   const v = validateEnvelope(data);
   if (!v.ok) {
-    findings.push({ level: 'error', text: `${v.code}: ${v.detail}(spec §4.2 — host bridge はこの envelope を黙って捨てます)` });
+    // Host behavior (spec §4.2, PKC2 PR #799): all failing checks are
+    // collected and rejected together — report one finding per reason.
+    for (const r of v.reasons) {
+      findings.push({ level: 'error', text: `${r.code}: ${r.detail}` });
+    }
+    findings.push({ level: 'info', text: 'host bridge はこの envelope を黙って捨てます(全 reason 同時報告、spec §4.2)' });
     // Continue with advisory checks where possible.
   } else {
     findings.push({ level: 'ok', text: `有効な PKC-Message v1 envelope(type=${v.envelope.type})` });
@@ -76,11 +80,11 @@ export function lintEnvelope(raw: string): Finding[] {
       if (typeof p['body'] !== 'string') {
         findings.push({ level: 'error', text: 'record:offer は body(string)が必須(§7.2.1)' });
       } else {
-        const bytes = utf8ByteLength(p['body']);
-        if (bytes > BODY_SIZE_CAP_BYTES) {
-          findings.push({ level: 'error', text: `body が size cap 超過: ${bytes.toLocaleString()} / ${BODY_SIZE_CAP_BYTES.toLocaleString()} bytes(§7.2.2、handler reject)` });
+        const units = p['body'].length;
+        if (units > BODY_SIZE_CAP_UTF16_UNITS) {
+          findings.push({ level: 'error', text: `body が size cap 超過: ${units.toLocaleString()} / ${BODY_SIZE_CAP_UTF16_UNITS.toLocaleString()} UTF-16 code units(§7.2.2、handler reject)` });
         } else {
-          findings.push({ level: 'info', text: `body: ${bytes.toLocaleString()} bytes(cap ${BODY_SIZE_CAP_BYTES.toLocaleString()})` });
+          findings.push({ level: 'info', text: `body: ${units.toLocaleString()} UTF-16 code units(cap ${BODY_SIZE_CAP_UTF16_UNITS.toLocaleString()}。byte ではない — 非 ASCII は実バイトが最大約 3 倍)` });
         }
       }
       if ('assets' in p) {

@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import {
-  BODY_SIZE_CAP_BYTES,
+  BODY_SIZE_CAP_UTF16_UNITS,
   buildEnvelope,
+  formatReasons,
   KNOWN_TYPES,
   parsePongProfile,
-  utf8ByteLength,
   validateEnvelope,
 } from '../../tools/shared/envelope';
 
@@ -20,18 +20,21 @@ function valid(): Record<string, unknown> {
   };
 }
 
-describe('validateEnvelope (spec §4.2 order)', () => {
+describe('validateEnvelope (spec §4.2 — 全 reason 収集、PKC2 PR #799 準拠)', () => {
   it('accepts a valid v1 envelope', () => {
     const r = validateEnvelope(valid());
     expect(r.ok).toBe(true);
     if (r.ok) expect(r.envelope.type).toBe('ping');
   });
 
-  it('rejects non-objects as NOT_OBJECT', () => {
+  it('rejects non-objects as NOT_OBJECT (alone — nothing else checkable)', () => {
     for (const bad of [null, undefined, 42, 'str', [1, 2]]) {
       const r = validateEnvelope(bad);
       expect(r.ok).toBe(false);
-      if (!r.ok) expect(r.code).toBe('NOT_OBJECT');
+      if (!r.ok) {
+        expect(r.reasons).toHaveLength(1);
+        expect(r.reasons[0]?.code).toBe('NOT_OBJECT');
+      }
     }
   });
 
@@ -47,13 +50,24 @@ describe('validateEnvelope (spec §4.2 order)', () => {
     for (const [data, code] of cases) {
       const r = validateEnvelope(data);
       expect(r.ok).toBe(false);
-      if (!r.ok) expect(r.code).toBe(code);
+      if (!r.ok) expect(r.reasons.map((x) => x.code)).toContain(code);
     }
   });
 
-  it('validation order: protocol wins over later failures', () => {
+  it('collects ALL failing reasons together (host behavior, not first-fail)', () => {
     const r = validateEnvelope({ protocol: 'x', version: 9, type: '', timestamp: 1 });
-    expect(!r.ok && r.code).toBe('WRONG_PROTOCOL');
+    expect(r.ok).toBe(false);
+    if (!r.ok) {
+      expect(r.reasons.map((x) => x.code).sort()).toEqual(
+        ['MISSING_TIMESTAMP', 'MISSING_TYPE', 'WRONG_PROTOCOL', 'WRONG_VERSION'],
+      );
+      expect(formatReasons(r.reasons)).toContain('[WRONG_PROTOCOL]');
+    }
+  });
+
+  it('MISSING_TYPE and INVALID_TYPE are mutually exclusive', () => {
+    const r = validateEnvelope({ ...valid(), type: 'nope:nope' });
+    expect(!r.ok && r.reasons.map((x) => x.code)).toEqual(['INVALID_TYPE']);
   });
 
   it('accepts every KNOWN_TYPE', () => {
@@ -106,10 +120,10 @@ describe('parsePongProfile (tolerant, spec §9.4)', () => {
   });
 });
 
-describe('utf8ByteLength (size cap is in bytes, spec §7.2.2)', () => {
-  it('counts multibyte characters as bytes', () => {
-    expect(utf8ByteLength('abc')).toBe(3);
-    expect(utf8ByteLength('あ')).toBe(3);
-    expect(BODY_SIZE_CAP_BYTES).toBe(262144);
+describe('size cap unit (spec §7.2.2 — UTF-16 code units、PKC2 PR #798 で確定)', () => {
+  it('cap value is 262144 code units, and length is the contract measure', () => {
+    expect(BODY_SIZE_CAP_UTF16_UNITS).toBe(262144);
+    // 'あ' is 3 bytes in UTF-8 but ONE code unit — the host counts units.
+    expect('あ'.length).toBe(1);
   });
 });

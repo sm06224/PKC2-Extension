@@ -36,7 +36,7 @@ export interface Envelope {
   timestamp: string;
 }
 
-/** spec §4.3 — envelope-level reject codes, in validation order. */
+/** spec §4.3 — envelope-level reject codes. */
 export type RejectCode =
   | 'NOT_OBJECT'
   | 'WRONG_PROTOCOL'
@@ -45,31 +45,48 @@ export type RejectCode =
   | 'INVALID_TYPE'
   | 'MISSING_TIMESTAMP';
 
+export interface RejectReason {
+  code: RejectCode;
+  detail: string;
+}
+
+/**
+ * Mirrors the host bridge exactly (spec §4.2, corrected by PKC2 PR #799):
+ * `NOT_OBJECT` returns alone (nothing else can be checked), every other
+ * failing check is **collected** and reported together — the host rejects
+ * once with all reasons, not first-fail.
+ */
 export type ValidationResult =
   | { ok: true; envelope: Envelope }
-  | { ok: false; code: RejectCode; detail: string };
+  | { ok: false; reasons: RejectReason[] };
 
 export function validateEnvelope(data: unknown): ValidationResult {
   if (data === null || typeof data !== 'object' || Array.isArray(data)) {
-    return { ok: false, code: 'NOT_OBJECT', detail: 'envelope が plain object ではない' };
+    return { ok: false, reasons: [{ code: 'NOT_OBJECT', detail: 'envelope が plain object ではない' }] };
   }
   const d = data as Record<string, unknown>;
+  const reasons: RejectReason[] = [];
   if (d['protocol'] !== PROTOCOL) {
-    return { ok: false, code: 'WRONG_PROTOCOL', detail: `protocol が 'pkc-message' ではない (${shortValue(d['protocol'])})` };
+    reasons.push({ code: 'WRONG_PROTOCOL', detail: `protocol が 'pkc-message' ではない (${shortValue(d['protocol'])})` });
   }
   if (d['version'] !== VERSION) {
-    return { ok: false, code: 'WRONG_VERSION', detail: `version が 1 ではない (${shortValue(d['version'])})` };
+    reasons.push({ code: 'WRONG_VERSION', detail: `version が 1 ではない (${shortValue(d['version'])})` });
   }
   if (typeof d['type'] !== 'string' || d['type'] === '') {
-    return { ok: false, code: 'MISSING_TYPE', detail: 'type が空、または string でない' };
-  }
-  if (!(KNOWN_TYPES as readonly string[]).includes(d['type'])) {
-    return { ok: false, code: 'INVALID_TYPE', detail: `KNOWN_TYPES に未登録の type (${shortValue(d['type'])})` };
+    reasons.push({ code: 'MISSING_TYPE', detail: 'type が空、または string でない' });
+  } else if (!(KNOWN_TYPES as readonly string[]).includes(d['type'])) {
+    reasons.push({ code: 'INVALID_TYPE', detail: `KNOWN_TYPES に未登録の type (${shortValue(d['type'])})` });
   }
   if (typeof d['timestamp'] !== 'string') {
-    return { ok: false, code: 'MISSING_TIMESTAMP', detail: 'timestamp が string でない' };
+    reasons.push({ code: 'MISSING_TIMESTAMP', detail: 'timestamp が string でない' });
   }
+  if (reasons.length > 0) return { ok: false, reasons };
   return { ok: true, envelope: d as unknown as Envelope };
+}
+
+/** Join reasons for single-line display. */
+export function formatReasons(reasons: RejectReason[]): string {
+  return reasons.map((r) => `[${r.code}] ${r.detail}`).join('; ');
 }
 
 export function buildEnvelope(
@@ -116,13 +133,13 @@ export function parsePongProfile(payload: unknown): PongProfile | null {
   };
 }
 
-/** spec §7.2.2 — record:offer body size cap (bytes). */
-export const BODY_SIZE_CAP_BYTES = 262144;
-
-/** UTF-8 byte length of a string (the cap is specified in bytes). */
-export function utf8ByteLength(s: string): number {
-  return new TextEncoder().encode(s).length;
-}
+/**
+ * spec §7.2.2 — record:offer body size cap, measured in **UTF-16 code
+ * units** (`String.prototype.length`), NOT bytes. Unit fixed by the host
+ * in PKC2 PR #798 (#795 A-2): a non-ASCII body may exceed 262144 bytes
+ * while passing this cap (Japanese ≈ 3 bytes/unit in UTF-8).
+ */
+export const BODY_SIZE_CAP_UTF16_UNITS = 262144;
 
 function shortValue(v: unknown): string {
   try {

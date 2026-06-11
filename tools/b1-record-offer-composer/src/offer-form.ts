@@ -9,7 +9,7 @@
  *  - todo bodies are JSON-as-string in PKC2's own shape.
  */
 
-import { BODY_SIZE_CAP_BYTES, utf8ByteLength } from '../../shared/envelope';
+import { BODY_SIZE_CAP_UTF16_UNITS } from '../../shared/envelope';
 import { serializeTodoBody } from '../../shared/todo-body';
 
 export { serializeTodoBody };
@@ -83,11 +83,11 @@ export function buildOfferPayload(f: OfferFormState, nowIso: () => string): Offe
   } else {
     body = f.body;
   }
-  const bytes = utf8ByteLength(body);
-  if (bytes > BODY_SIZE_CAP_BYTES) {
+  const units = body.length;
+  if (units > BODY_SIZE_CAP_UTF16_UNITS) {
     return {
       ok: false,
-      error: `body が size cap 超過: ${bytes.toLocaleString()} / ${BODY_SIZE_CAP_BYTES.toLocaleString()} bytes(spec §7.2.2)`,
+      error: `body が size cap 超過: ${units.toLocaleString()} / ${BODY_SIZE_CAP_UTF16_UNITS.toLocaleString()} UTF-16 code units(spec §7.2.2 — byte ではない)`,
     };
   }
 

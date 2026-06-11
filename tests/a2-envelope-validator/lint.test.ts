@@ -35,6 +35,13 @@ describe('lintEnvelope', () => {
     expect(f[0]?.text).toContain('WRONG_VERSION');
   });
 
+  it('reports one error per reason when multiple checks fail (host behavior)', () => {
+    const f = lintEnvelope(valid({ version: 2, timestamp: 99 }));
+    const errors = f.filter((x) => x.level === 'error');
+    expect(errors.some((x) => x.text.includes('WRONG_VERSION'))).toBe(true);
+    expect(errors.some((x) => x.text.includes('MISSING_TIMESTAMP'))).toBe(true);
+  });
+
   it('still gives field advisories when the envelope is invalid', () => {
     const f = lintEnvelope(JSON.stringify({ protocol: 'pkc-message', version: 1, type: 'ping', timestamp: 'x' }));
     expect(f.some((x) => x.text.includes('source_id'))).toBe(true);
@@ -55,6 +62,7 @@ describe('lintEnvelope', () => {
 
   it('flags oversized record:offer bodies', () => {
     const f = lintEnvelope(valid({ type: 'record:offer', payload: { title: 't', body: 'x'.repeat(262145) } }));
+    // length 262145 > 262144 UTF-16 units
     expect(f.some((x) => x.level === 'error' && x.text.includes('size cap'))).toBe(true);
   });
 

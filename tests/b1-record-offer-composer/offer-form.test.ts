@@ -5,7 +5,7 @@ import {
   serializeTodoBody,
   type OfferFormState,
 } from '../../tools/b1-record-offer-composer/src/offer-form';
-import { BODY_SIZE_CAP_BYTES } from '../../tools/shared/envelope';
+import { BODY_SIZE_CAP_UTF16_UNITS } from '../../tools/shared/envelope';
 
 const NOW = (): string => '2026-06-10T12:00:00.000Z';
 
@@ -59,10 +59,16 @@ describe('buildOfferPayload', () => {
     if (r.ok) expect(JSON.parse(r.payload['body'] as string)).not.toHaveProperty('date');
   });
 
-  it('enforces the body size cap in bytes', () => {
-    const r = buildOfferPayload(form({ title: 'T', body: 'あ'.repeat(BODY_SIZE_CAP_BYTES / 3 + 1) }), NOW);
+  it('enforces the body size cap in UTF-16 code units (host contract, PKC2 #798)', () => {
+    const r = buildOfferPayload(form({ title: 'T', body: 'x'.repeat(BODY_SIZE_CAP_UTF16_UNITS + 1) }), NOW);
     expect(r.ok).toBe(false);
     if (!r.ok) expect(r.error).toContain('size cap');
+  });
+
+  it('a multibyte body at exactly the cap is accepted even though it exceeds the cap in bytes', () => {
+    // Mirrors the host pin test: 'あ' = 1 code unit but 3 UTF-8 bytes.
+    const r = buildOfferPayload(form({ title: 'T', body: 'あ'.repeat(BODY_SIZE_CAP_UTF16_UNITS) }), NOW);
+    expect(r.ok).toBe(true);
   });
 
   it('includes capture fields only when present', () => {
