@@ -1,0 +1,7 @@
+/* importer 共通スタイル(B6/B7/B8 で同一ファイルをコピー使用)。 */
+
+.pkc-imp-root { max-width: 760px; margin: 0 auto; padding: 12px; display: flex; flex-direction: column; gap: 10px; }
+.pkc-imp-header { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+.pkc-imp-title { font-weight: 600; font-size: 15px; }
+.pkc-history-list { display: flex; flex-direction: column; gap: 2px; max-height: 280px; overflow-y: auto; font-size: 12px; }
+.pkc-history-row { display: flex; gap: 8px; align-items: baseline; }
