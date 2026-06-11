@@ -1,0 +1,32 @@
+/* A3 capability-matrix — layout on top of shared/base.css. */
+
+.pkc-matrix-root {
+  max-width: 980px;
+  margin: 0 auto;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.pkc-matrix-header { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+.pkc-matrix-title { font-weight: 600; font-size: 15px; }
+
+.pkc-matrix-table { border-collapse: collapse; font-size: 12px; width: 100%; }
+.pkc-matrix-table th,
+.pkc-matrix-table td {
+  border: 1px solid var(--c-border);
+  padding: 4px 8px;
+  text-align: left;
+  white-space: nowrap;
+}
+.pkc-matrix-url { font-family: ui-monospace, monospace; max-width: 260px; overflow: hidden; text-overflow: ellipsis; }
+.pkc-matrix-cap { text-align: center; }
+.pkc-matrix-connected { color: var(--c-accent); }
+.pkc-matrix-silent { color: var(--c-danger); }
+.pkc-matrix-probing,
+.pkc-matrix-loading { color: var(--c-warn); }
+
+/* Target iframes are functional, not visual — keep them out of the way
+   but NOT display:none (some browsers throttle hidden frames). */
+.pkc-matrix-dock { display: flex; gap: 4px; }
+.pkc-matrix-frame { width: 120px; height: 80px; opacity: 0.25; border: 1px solid var(--c-border); }
