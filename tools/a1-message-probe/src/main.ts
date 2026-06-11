@@ -22,10 +22,10 @@
 
 import './probe.css';
 import {
-  BODY_SIZE_CAP_BYTES,
+  BODY_SIZE_CAP_UTF16_UNITS,
   buildEnvelope,
+  formatReasons,
   parsePongProfile,
-  utf8ByteLength,
   validateEnvelope,
   type MessageType,
   type PongProfile,
@@ -187,7 +187,7 @@ function sendRaw(data: unknown, label: string): void {
     origin: '-',
     viaHost: true,
     data,
-    ...(v.ok ? {} : { rejectCode: v.code, detail: `ローカル検証: ${v.detail}` }),
+    ...(v.ok ? {} : { rejectCode: v.reasons[0]!.code, detail: `ローカル検証: ${formatReasons(v.reasons)}` }),
     ...(ok ? {} : { detail: '送信時に例外(チャネル断)' }),
   });
   scheduleLogRender();
@@ -262,7 +262,7 @@ function onWindowMessage(ev: MessageEvent): void {
     origin: ev.origin,
     viaHost,
     data,
-    ...(v.ok ? {} : { rejectCode: v.code, detail: v.detail }),
+    ...(v.ok ? {} : { rejectCode: v.reasons[0]!.code, detail: formatReasons(v.reasons) }),
   });
 
   if (v.ok && v.envelope.type === 'pong' && viaHost) {
@@ -479,9 +479,9 @@ function buildOfferComposer(): HTMLElement {
   body.rows = 4;
   const bytes = el('div', 'pkc-byte-counter', '0 bytes');
   body.addEventListener('input', () => {
-    const n = utf8ByteLength(body.value);
-    bytes.textContent = `${n.toLocaleString()} / ${BODY_SIZE_CAP_BYTES.toLocaleString()} bytes`;
-    bytes.classList.toggle('pkc-over-cap', n > BODY_SIZE_CAP_BYTES);
+    const n = body.value.length;
+    bytes.textContent = `${n.toLocaleString()} / ${BODY_SIZE_CAP_UTF16_UNITS.toLocaleString()} UTF-16 units(byte ではない)`;
+    bytes.classList.toggle('pkc-over-cap', n > BODY_SIZE_CAP_UTF16_UNITS);
   });
   const archetype = document.createElement('select');
   for (const a of ['(指定なし)', 'text', 'textlog', 'todo', 'form', 'attachment', 'folder', 'generic', 'opaque']) {
@@ -504,8 +504,8 @@ function buildOfferComposer(): HTMLElement {
       err.textContent = 'title は必須です(spec §7.2.1)';
       return;
     }
-    if (utf8ByteLength(body.value) > BODY_SIZE_CAP_BYTES) {
-      err.textContent = `body が size cap(${BODY_SIZE_CAP_BYTES.toLocaleString()} bytes)超過 — host 側で reject されます(spec §7.2.2)。送信は中止しました`;
+    if (body.value.length > BODY_SIZE_CAP_UTF16_UNITS) {
+      err.textContent = `body が size cap(${BODY_SIZE_CAP_UTF16_UNITS.toLocaleString()} UTF-16 units)超過 — host 側で reject されます(spec §7.2.2)。送信は中止しました`;
       return;
     }
     const payload: Record<string, unknown> = { title: title.value, body: body.value };
@@ -603,7 +603,7 @@ function buildAdvanced(): HTMLElement {
   const validate = button('ローカル検証', 'pkc-btn-small', () => {
     try {
       const v = validateEnvelope(JSON.parse(raw.value));
-      result.textContent = v.ok ? `OK: 有効な v1 envelope(type=${v.envelope.type})` : `${v.code}: ${v.detail}`;
+      result.textContent = v.ok ? `OK: 有効な v1 envelope(type=${v.envelope.type})` : formatReasons(v.reasons);
       result.classList.toggle('pkc-form-ok', v.ok);
     } catch (ex) {
       result.classList.remove('pkc-form-ok');
@@ -653,7 +653,7 @@ function buildAdvanced(): HTMLElement {
     ];
     for (const [label, sample] of samples) {
       const v = validateEnvelope(sample);
-      note(`自己テスト ${label} → ${v.ok ? 'OK' : `${v.code}(${v.detail})`}`, sample);
+      note(`自己テスト ${label} → ${v.ok ? 'OK' : formatReasons(v.reasons)}`, sample);
     }
   }, 'ホストなしで envelope validation の挙動を確認');
 
