@@ -1,0 +1,23 @@
+/* A5 replay-player — layout on top of shared/base.css. */
+
+.pkc-player-root {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.pkc-player-header { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+.pkc-player-title { font-weight: 600; font-size: 15px; }
+.pkc-player-interval { width: 90px; flex: 0 0 auto; }
+.pkc-player-status { color: var(--c-fg-dim); font-size: 12px; min-height: 1em; margin-top: 6px; white-space: pre-wrap; }
+
+.pkc-player-list { display: flex; flex-direction: column; gap: 1px; max-height: 320px; overflow-y: auto; font-family: ui-monospace, monospace; font-size: 12px; }
+.pkc-player-summary { color: var(--c-fg); margin-bottom: 4px; }
+.pkc-player-row { display: flex; gap: 8px; align-items: baseline; }
+.pkc-player-done { opacity: 0.45; }
+.pkc-player-idx { color: var(--c-fg-dim); white-space: pre; }
+.pkc-player-dir { color: var(--c-info); }
+.pkc-player-type { font-weight: 600; }
+.pkc-player-at { color: var(--c-fg-dim); font-size: 11px; }

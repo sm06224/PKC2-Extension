@@ -1,0 +1,14 @@
+/* A4 traffic-recorder — layout on top of shared/base.css. */
+
+.pkc-rec-root {
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.pkc-rec-header { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+.pkc-rec-title { font-weight: 600; font-size: 15px; }
+.pkc-rec-count { font-family: ui-monospace, monospace; font-size: 13px; margin-top: 6px; }
+.pkc-rec-active { border-color: var(--c-danger); color: var(--c-danger); }
