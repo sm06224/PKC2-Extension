@@ -21,6 +21,7 @@
  */
 
 import './probe.css';
+import { helpButton } from '../../shared/help';
 import {
   BODY_SIZE_CAP_UTF16_UNITS,
   buildEnvelope,
@@ -777,6 +778,26 @@ export function mountProbe(root: HTMLElement): void {
   header.appendChild(statusText);
   header.appendChild(button('Send Ping', 'pkc-btn', () => sendPing(true)));
   header.appendChild(button('ⓘ', 'pkc-btn-small', toggleInfoPanel, 'バージョン・方針'));
+  header.appendChild(helpButton('Message Probe', {
+    what: "PKC-Message v1 の全トラフィックを観測し、各種メッセージを手動送信できるデバッグプローブです。",
+    how: [
+      "PKC2 に接続する(下の「接続方法」参照)",
+      "Send Ping で疎通確認 — 左に PongProfile(version / capabilities)が出ます",
+      "左のフォームから record:offer / export:request / navigate / custom を送信",
+      "右のログで往復を確認(type フィルタ・検索・Copy All — Copy All の JSON は A5 replay-player で再生できます)",
+      "Advanced: 不正な envelope を意図的に送って host 側 validation の挙動を観測",
+    ],
+    flow: [
+      "ping → pong は host の bridge が自動応答します",
+      "record:offer → host に PendingOffer banner が出て、accept は人が押します(自動では書き込まれません)",
+      "受信は event.source の同一性 + origin で host を判定し、表示するだけ(内容で動作は変わりません)",
+    ],
+    notes: [
+      "非 PKC メッセージ(pkc-graph-ext 等)は既定で非表示 — トグルで表示",
+      "ログは最大 500 件(古い順に破棄)",
+      "export:request は embedded ホスト限定 — launcher 起動の standalone ホストでは無応答になります(それ自体が capability gate の観測)",
+    ],
+  }));
   root.appendChild(header);
 
   // Main split: left controls / right log

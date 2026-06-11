@@ -17,6 +17,7 @@
 
 import '../../shared/base.css';
 import './player.css';
+import { helpButton } from '../../shared/help';
 import { parseCaptureText, type CapturedEvent } from '../../shared/capture-format';
 import { createHostConnection, type HostConnection } from '../../shared/host-connect';
 import { sendToHost } from '../../shared/host-link';
@@ -156,6 +157,23 @@ export function mountPlayer(root: HTMLElement): { conn: HostConnection } {
   header.appendChild(
     el('span', 'pkc-hint', `${TOOL_NAME} v${TOOL_VERSION} — 記録済みシナリオを接続中の host へ順次再送(既定は送信方向の PKC envelope のみ)`),
   );
+  header.appendChild(helpButton('Replay Player', {
+    what: "A4 の記録(または A1 の Copy All)を読み込み、接続中の PKC2 へ順番に再送する回帰テスト用プレイヤーです。",
+    how: [
+      "PKC2 に接続する",
+      "capture JSON を読み込む(ファイル選択 or 貼り付け)",
+      "送信間隔(ms)を確認 — host の flood guard(120 msg/分)を超えない値に",
+      "▶ 再生。進捗は一覧のグレーアウトで分かります。⏹ でいつでも停止",
+    ],
+    flow: [
+      "既定では「送信方向の PKC envelope」だけを、identity 束縛済みの接続先にのみ再送します",
+      "受信方向(pong 等)や非 PKC メッセージの再送はトグルで明示的に有効化(host 側 validation のテスト用)",
+    ],
+    notes: [
+      "record:offer を含むシナリオは host に PendingOffer banner が積まれます(accept は人)",
+      "接続が切れると自動停止します",
+    ],
+  }));
   root.appendChild(header);
 
   conn = createHostConnection({ sourceId: TOOL_ID, onNote: (t) => setStatus(t) });

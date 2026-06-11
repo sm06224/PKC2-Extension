@@ -15,6 +15,7 @@
 
 import '../../shared/base.css';
 import './composer.css';
+import { helpButton } from '../../shared/help';
 import { buildEnvelope, makeCorrelationId } from '../../shared/envelope';
 import { createHostConnection, type HostConnection } from '../../shared/host-connect';
 import { OfferTracker, offerStatusLabel } from '../../shared/offer-track';
@@ -186,6 +187,25 @@ export function mountComposer(root: HTMLElement): { conn: HostConnection } {
   header.appendChild(
     el('span', 'pkc-hint', `${TOOL_NAME} v${TOOL_VERSION} — record:offer を組み立てて送信(accept はホスト側 UI で行われます)`),
   );
+  header.appendChild(helpButton('Record Offer Composer', {
+    what: "任意 archetype の record:offer を組み立てて送る汎用フォームです。送信前に envelope 全体をプレビューできます。",
+    how: [
+      "PKC2 に接続する",
+      "archetype と title / body を入力(todo を選ぶと description + 期日の専用フィールドに切替)",
+      "下のプレビューで実際に送られる envelope を確認",
+      "Send record:offer → PKC2 側の banner で accept",
+      "「オファー状況」で 送信済み → 到達 → 受理 / 却下 を追跡",
+    ],
+    flow: [
+      "record:offer は提案であり、host 側で人が accept して初めて entry が作られます(spec §6.2)",
+      "correlation_id を自動付与 — 対応 host(PKC2#804)は ack / accept / reject に echo を返し、状況がライブ更新されます。旧 host では従来どおり相関不能の注記になります",
+    ],
+    notes: [
+      "tags / assets は v1 payload に存在しません",
+      "body cap 262,144 UTF-16 units",
+      "入力はドラフトとして localStorage に自動保存(「フォームをクリア」で削除)",
+    ],
+  }));
   root.appendChild(header);
 
   conn = createHostConnection({

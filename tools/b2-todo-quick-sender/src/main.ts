@@ -14,6 +14,7 @@
 
 import '../../shared/base.css';
 import './sender.css';
+import { helpButton } from '../../shared/help';
 import { makeCorrelationId } from '../../shared/envelope';
 import { createHostConnection, type HostConnection } from '../../shared/host-connect';
 import { OfferTracker, offerStatusLabel } from '../../shared/offer-track';
@@ -86,6 +87,21 @@ export function mountTodoSender(root: HTMLElement): { conn: HostConnection } {
   header.setAttribute('data-pkc-region', 'todo-header');
   header.appendChild(el('span', 'pkc-todo-title', '✅ PKC2 Todo Quick Sender'));
   header.appendChild(el('span', 'pkc-hint', `${TOOL_NAME} v${TOOL_VERSION} — Enter で即送信、accept はホスト側で`));
+  header.appendChild(helpButton('Todo Quick Sender', {
+    what: "やることを Enter 一発で todo として PKC2 に放り込む最速入力です。",
+    how: [
+      "PKC2 に接続する",
+      "やることを入力して Enter(期日は任意。送信後も保持され連投できます)",
+      "「オファー状況」で到達 / 受理 / 却下を追跡",
+      "PKC2 側の banner で accept すると todo entry になります",
+    ],
+    flow: [
+      "title = 入力した本文、body は PKC2 の todo JSON({status:'open', description, date?, archived:false})で送信されます",
+    ],
+    notes: [
+      "優先度 / タグは v1 payload に存在しません(SR-08)",
+    ],
+  }));
   root.appendChild(header);
 
   const conn = createHostConnection({

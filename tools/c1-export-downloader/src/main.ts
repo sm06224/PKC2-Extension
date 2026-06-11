@@ -14,6 +14,7 @@
 
 import '../../shared/base.css';
 import './downloader.css';
+import { helpButton } from '../../shared/help';
 import { createHostConnection, type HostConnection } from '../../shared/host-connect';
 import { button, el, fieldRow, textInput } from '../../shared/ui';
 
@@ -104,6 +105,22 @@ export function mountDownloader(root: HTMLElement): { conn: HostConnection } {
   header.appendChild(
     el('span', 'pkc-hint', `${TOOL_NAME} v${TOOL_VERSION} — export:request は embedded-only(下の iframe 読み込みで接続)`),
   );
+  header.appendChild(helpButton('Export Downloader', {
+    what: "embedded の PKC2 から container 全体の export HTML を取得してファイル保存します。",
+    how: [
+      "この HTML を pkc2.html と同じ場所に置き、「PKC2 を読み込み」で iframe 接続する(launcher 起動では動きません)",
+      "Request Export(filename は任意)",
+      "受信したら Download HTML",
+    ],
+    flow: [
+      "export:request → host が export:result(container 全文。数 MB になりえます)を返します",
+      "受信 HTML はこのツール内では描画も解析もせず、そのままファイルに保存します(漏洩面を広げないため)",
+    ],
+    notes: [
+      "export:request は embedded-only(spec §7.5.3)。standalone ホストは無応答で、30 秒のタイムアウト表示がその観測になります",
+      "host 提供の filename はサニタイズされます",
+    ],
+  }));
   root.appendChild(header);
 
   const conn = createHostConnection({

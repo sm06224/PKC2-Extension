@@ -12,6 +12,7 @@
 
 import '../../shared/base.css';
 import './matrix.css';
+import { helpButton } from '../../shared/help';
 import { buildEnvelope, parsePongProfile, validateEnvelope, type PongProfile } from '../../shared/envelope';
 import { expectedOriginForUrl, isEmbeddableUrl } from '../../shared/host-link';
 import { button, el, textInput } from '../../shared/ui';
@@ -193,6 +194,22 @@ export function mountMatrix(root: HTMLElement): void {
   header.appendChild(
     el('span', 'pkc-hint', `${TOOL_NAME} v${TOOL_VERSION} — 複数 PKC2 の PongProfile を比較(各行は iframe identity に束縛)`),
   );
+  header.appendChild(helpButton('Capability Matrix', {
+    what: "複数の pkc2.html を読み込んで ping し、バージョンと capabilities を一覧で比較します。",
+    how: [
+      "URL を入れて「追加して ping」(最大 8 件。同じ場所に置いた相対パス ./pkc2.html が確実)",
+      "表で version / schema / embedded / capabilities を見比べる",
+      "応答なしの行は「再ping」、不要な行は ✕ で除去",
+    ],
+    flow: [
+      "各行は専用 iframe に ping を送り、event.source がその iframe のときだけ pong を受理します(行間の取り違えは構造的に起きません)",
+      "capabilities 列は接続済みホストの和集合で動的に増えます — どのビルドが record:ack 対応かの確認にも使えます",
+    ],
+    notes: [
+      "別オリジンの PKC2 は host 側 allowlist(same-origin)により応答しません",
+    ],
+    connection: false,
+  }));
   root.appendChild(header);
 
   const panel = el('div', 'pkc-panel');

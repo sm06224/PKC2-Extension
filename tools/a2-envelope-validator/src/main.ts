@@ -10,6 +10,7 @@
 
 import '../../shared/base.css';
 import './validator.css';
+import { helpButton } from '../../shared/help';
 import {
   buildEnvelope,
   validateEnvelope,
@@ -142,6 +143,24 @@ export function mountValidator(root: HTMLElement): void {
   header.appendChild(
     el('span', 'pkc-hint', `${TOOL_NAME} v${TOOL_VERSION} — 完全オフライン。host bridge と同順(spec §4.2)で判定`),
   );
+  header.appendChild(helpButton('Envelope Validator', {
+    what: "envelope JSON を貼ると、PKC2 host と同じ規則(spec §4.2)で合否と助言を返すオフライン検証器です。",
+    how: [
+      "検証したい envelope JSON を貼り付ける(入力すると自動判定)",
+      "✕ = host が黙って捨てる reason(全件同時報告されます)",
+      "⚠ / ⓘ の助言を見て payload を修正",
+      "「サンプル挿入」で正しい形のひな型を確認",
+    ],
+    flow: [
+      "完全オフラインで、どこにも送信しません",
+      "判定ロジックは host bridge の validateEnvelope と同等(複数 reason の同時報告も同じ)",
+    ],
+    notes: [
+      "record:offer は title / body 必須、body cap は 262,144 UTF-16 code units(バイトではない)",
+      "payload への assets 同梱は禁止(spec §6.3)、tags は v1 に存在しません",
+    ],
+    connection: false,
+  }));
   root.appendChild(header);
 
   const panel = el('div', 'pkc-panel');

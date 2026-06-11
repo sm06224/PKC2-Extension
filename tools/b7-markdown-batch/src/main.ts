@@ -8,6 +8,7 @@
 
 import '../../shared/base.css';
 import './importer.css';
+import { helpButton } from '../../shared/help';
 import { sendBatch, splitFrontMatter, type BatchHandle, type BatchRow } from '../../shared/batch-offer';
 import { createHostConnection, type HostConnection } from '../../shared/host-connect';
 import { OfferTracker, offerStatusLabel } from '../../shared/offer-track';
@@ -75,6 +76,22 @@ export function mountMdBatch(root: HTMLElement): { conn: HostConnection } {
   headerEl.setAttribute('data-pkc-region', 'md-header');
   headerEl.appendChild(el('span', 'pkc-imp-title', '📚 PKC2 Markdown Batch'));
   headerEl.appendChild(el('span', 'pkc-hint', `${TOOL_NAME} v${TOOL_VERSION} — 複数 .md を 1 ファイル = 1 offer で送信`));
+  headerEl.appendChild(helpButton('Markdown Batch', {
+    what: "複数の .md ファイルをそれぞれ 1 entry として一括 offer します。",
+    how: [
+      "PKC2 に接続する",
+      ".md ファイルを複数選択(上限 100)",
+      "一覧で title と本文サイズを確認",
+      "「一括 offer」(600ms 間隔・停止可)",
+    ],
+    flow: [
+      "front-matter(--- で囲んだ title / archetype / source_url)を解釈します",
+      "title の優先順: front-matter > 先頭の # 見出し > ファイル名",
+    ],
+    notes: [
+      "未知の archetype と http(s) 以外の source_url は安全のため無視されます",
+    ],
+  }));
   root.appendChild(headerEl);
 
   conn = createHostConnection({

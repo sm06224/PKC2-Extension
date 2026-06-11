@@ -9,6 +9,7 @@
 
 import '../../shared/base.css';
 import './importer.css';
+import { helpButton } from '../../shared/help';
 import { sendBatch, type BatchHandle, type BatchRow } from '../../shared/batch-offer';
 import { createHostConnection, type HostConnection } from '../../shared/host-connect';
 import { OfferTracker, offerStatusLabel } from '../../shared/offer-track';
@@ -106,6 +107,23 @@ export function mountBookmarkImporter(root: HTMLElement): { conn: HostConnection
   headerEl.setAttribute('data-pkc-region', 'bm-header');
   headerEl.appendChild(el('span', 'pkc-imp-title', '🔖 PKC2 Bookmark Importer'));
   headerEl.appendChild(el('span', 'pkc-hint', `${TOOL_NAME} v${TOOL_VERSION} — bookmarks.html の各項目を text offer に(上限 ${MAX_BOOKMARKS})`));
+  headerEl.appendChild(helpButton('Bookmark Importer', {
+    what: "ブラウザのブックマーク(bookmarks.html)をフォルダ階層付きの text entry 群として PKC2 に取り込みます。",
+    how: [
+      "ブラウザでブックマークを HTML 形式でエクスポート",
+      "PKC2 に接続してファイルを選択",
+      "一覧でフォルダ / タイトルを確認",
+      "「一括 offer」(600ms 間隔・停止可)",
+    ],
+    flow: [
+      "各ブックマークは「markdown リンク + > folder: 階層」の body と source_url を持つ text offer になります",
+      "HTML の解析は inert な DOMParser で行い、スクリプトは実行されません",
+    ],
+    notes: [
+      "http(s) の URL のみ取り込みます(javascript: 等は除外)",
+      "上限 200 件",
+    ],
+  }));
   root.appendChild(headerEl);
 
   conn = createHostConnection({
