@@ -69,6 +69,12 @@ describe('lintEnvelope', () => {
   it('notes embedded-only for export:request and host-direction types', () => {
     expect(lintEnvelope(valid({ type: 'export:request' })).some((x) => x.text.includes('embedded-only'))).toBe(true);
     expect(lintEnvelope(valid({ type: 'pong' })).some((x) => x.text.includes('host → sender'))).toBe(true);
+    expect(lintEnvelope(valid({ type: 'record:ack' })).some((x) => x.text.includes('host → sender'))).toBe(true);
+  });
+
+  it('advises on correlation_id (v1.x additive, PKC2#804)', () => {
+    expect(lintEnvelope(valid({ correlation_id: 'c-1' })).some((x) => x.level === 'info' && x.text.includes('correlation_id'))).toBe(true);
+    expect(lintEnvelope(valid({ correlation_id: 42 })).some((x) => x.level === 'warn' && x.text.includes('correlation_id'))).toBe(true);
   });
 });
 

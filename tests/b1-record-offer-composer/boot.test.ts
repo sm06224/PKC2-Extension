@@ -10,7 +10,12 @@ import type { HostLink } from '../../tools/shared/host-link';
 
 let root: HTMLElement;
 let conn: HostConnection;
-const fakeHostWindow = { postMessage: (): void => undefined } as unknown as Window;
+const sentToHost: unknown[] = [];
+const fakeHostWindow = {
+  postMessage: (data: unknown): void => {
+    sentToHost.push(data);
+  },
+} as unknown as Window;
 const fakeLink: HostLink = {
   mode: 'iframe',
   hostWindow: fakeHostWindow,
@@ -88,22 +93,37 @@ describe('host interaction (end-to-end parity)', () => {
     expect(statusText?.textContent).toContain('embedded=true');
   });
 
-  it('send appends a visible history row', () => {
+  it('send appears in the offer-status panel with a correlation id attached', () => {
     const title = root.querySelector<HTMLInputElement>('input[placeholder^="title"]');
     title!.value = '送信テスト';
     title!.dispatchEvent(new Event('input', { bubbles: true }));
+    sentToHost.length = 0;
     const sendBtn = [...root.querySelectorAll('button')].find((b) => b.textContent?.includes('Send record:offer'));
     sendBtn!.click();
-    const hist = root.querySelector('[data-pkc-region="composer-history"]');
-    expect(hist?.textContent).toContain('record:offer 送信: "送信テスト"');
+    const env = sentToHost[0] as { correlation_id?: string };
+    expect(typeof env.correlation_id).toBe('string'); // PKC2#804: 自動付与
+    const offers = root.querySelector('[data-pkc-region="composer-offers"]');
+    expect(offers?.textContent).toContain('送信テスト');
+    expect(offers?.textContent).toContain('送信済み');
   });
 
-  it('inbound record:reject appears in history with the correlation caveat', () => {
+  it('ack → accept round-trip updates the offer status (end-to-end parity, PKC2#804)', () => {
+    const env = sentToHost[0] as { correlation_id: string };
+    conn.handleMessage(envelopeFromHost('record:ack', { offer_id: 'o-9', correlation_id: env.correlation_id }));
+    const offers = root.querySelector('[data-pkc-region="composer-offers"]');
+    expect(offers?.textContent).toContain('到達');
+    expect(offers?.textContent).toContain('o-9');
+    conn.handleMessage(envelopeFromHost('record:accept', { offer_id: 'o-9', assigned_lid: 'lid-7', correlation_id: env.correlation_id }));
+    expect(offers?.textContent).toContain('受理');
+    expect(offers?.textContent).toContain('lid-7');
+  });
+
+  it('uncorrelated record:reject (old host) falls back to the history note', () => {
     conn.handleMessage(envelopeFromHost('record:reject', { offer_id: 'o-123', reason: 'dismissed' }));
     const hist = root.querySelector('[data-pkc-region="composer-history"]');
     expect(hist?.textContent).toContain('record:reject 受信');
     expect(hist?.textContent).toContain('o-123');
-    expect(hist?.textContent).toContain('SR-02');
+    expect(hist?.textContent).toContain('PKC2#804');
   });
 
   it('messages from a non-host window are ignored for status/history', () => {

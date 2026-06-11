@@ -15,8 +15,9 @@
 
 import '../../shared/base.css';
 import './composer.css';
-import { buildEnvelope } from '../../shared/envelope';
+import { buildEnvelope, makeCorrelationId } from '../../shared/envelope';
 import { createHostConnection, type HostConnection } from '../../shared/host-connect';
+import { OfferTracker, offerStatusLabel } from '../../shared/offer-track';
 import { button, el, fieldRow, selectInput, textInput } from '../../shared/ui';
 import { ARCHETYPES, buildOfferPayload, emptyOfferForm, type OfferFormState } from './offer-form';
 
@@ -33,6 +34,27 @@ interface HistoryEntry {
 
 const history: HistoryEntry[] = [];
 const HISTORY_CAP = 100;
+/** Offer round-trip status (correlation_id ベース、PKC2#804)。 */
+const tracker = new OfferTracker();
+let offersHost: HTMLElement | null = null;
+
+function renderOffers(): void {
+  if (!offersHost) return;
+  offersHost.replaceChildren();
+  const records = tracker.all();
+  if (records.length === 0) {
+    offersHost.appendChild(el('div', 'pkc-hint', 'まだ送信していません'));
+    return;
+  }
+  for (const rec of [...records].reverse()) {
+    const row = el('div', `pkc-history-row pkc-offer-${rec.status}`);
+    const t = new Date(rec.sentAt);
+    const hh = `${String(t.getHours()).padStart(2, '0')}:${String(t.getMinutes()).padStart(2, '0')}:${String(t.getSeconds()).padStart(2, '0')}`;
+    row.appendChild(el('span', 'pkc-history-time', hh));
+    row.appendChild(el('span', 'pkc-history-text', `"${rec.title}" — ${offerStatusLabel(rec)}`));
+    offersHost.appendChild(row);
+  }
+}
 
 let conn: HostConnection | null = null;
 let historyHost: HTMLElement | null = null;
@@ -171,13 +193,30 @@ export function mountComposer(root: HTMLElement): { conn: HostConnection } {
     onNote: (text) => pushHistory('note', text),
     onEnvelope: (inbound) => {
       if (!inbound.viaHost) return;
-      if (inbound.envelope.type === 'record:reject') {
-        const p = inbound.envelope.payload as { offer_id?: unknown; reason?: unknown } | null;
+      const { type, payload } = inbound.envelope;
+      // PKC2#804(v1.x): ack / accept / reject を correlation_id で相関。
+      if (type === 'record:ack') {
+        if (tracker.resolveAck(payload)) renderOffers();
+        else pushHistory('note', 'record:ack 受信(相関先なし — 別ツールの offer か、追跡上限超過)');
+        return;
+      }
+      if (type === 'record:accept') {
+        if (tracker.resolveAccept(payload)) renderOffers();
+        else pushHistory('note', 'record:accept 受信(相関先なし)');
+        return;
+      }
+      if (type === 'record:reject') {
+        if (tracker.resolveReject(payload)) {
+          renderOffers();
+          return;
+        }
+        // 旧 host(correlation echo なし・ack なし)へのフォールバック表示。
+        const p = payload as { offer_id?: unknown; reason?: unknown } | null;
         const offerId = p && typeof p.offer_id === 'string' ? p.offer_id : '?';
         const reason = p && typeof p.reason === 'string' ? p.reason : '?';
         pushHistory(
           'reject',
-          `record:reject 受信(offer_id=${offerId}, reason=${reason})— v1 では offer_id を送信側が知らないため、どの offer かは特定できません(SR-02/SR-04)`,
+          `record:reject 受信(offer_id=${offerId}, reason=${reason})— 旧 host は correlation echo が無いため、どの offer かは特定できません(PKC2#804 対応 host で解消)`,
         );
       }
     },
@@ -254,10 +293,11 @@ export function mountComposer(root: HTMLElement): { conn: HostConnection } {
         errorHost.textContent = r.error;
         return;
       }
-      const sent = conn.send('record:offer', r.payload);
+      const correlationId = makeCorrelationId();
+      const sent = conn.send('record:offer', r.payload, { correlationId });
       if (sent) {
-        const arch = (r.payload['archetype'] as string | undefined) ?? '(host 既定)';
-        pushHistory('sent', `record:offer 送信: "${String(r.payload['title'])}" [${arch}] — 応答なし=未処理 or 受理待ち(§8.3)`);
+        tracker.begin(correlationId, String(r.payload['title']));
+        renderOffers();
       }
     }),
   );
@@ -283,6 +323,14 @@ export function mountComposer(root: HTMLElement): { conn: HostConnection } {
   previewHost = el('pre', 'pkc-preview-pre');
   preview.appendChild(previewHost);
   root.appendChild(preview);
+
+  // ---- offer status (correlation_id round-trip, PKC2#804)
+  const offers = el('div', 'pkc-panel');
+  offers.setAttribute('data-pkc-region', 'composer-offers');
+  offers.appendChild(el('div', 'pkc-panel-heading', 'オファー状況(correlation_id で host の ack/accept/reject と相関)'));
+  offersHost = el('div', 'pkc-history-list');
+  offers.appendChild(offersHost);
+  root.appendChild(offers);
 
   // ---- history
   const hist = el('div', 'pkc-panel');
@@ -324,6 +372,7 @@ export function mountComposer(root: HTMLElement): { conn: HostConnection } {
   }
   syncArchetype();
   updatePreview();
+  renderOffers();
   renderHistory();
   return { conn };
 }

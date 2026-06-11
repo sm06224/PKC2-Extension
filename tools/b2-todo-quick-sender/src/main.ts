@@ -14,7 +14,9 @@
 
 import '../../shared/base.css';
 import './sender.css';
+import { makeCorrelationId } from '../../shared/envelope';
 import { createHostConnection, type HostConnection } from '../../shared/host-connect';
+import { OfferTracker, offerStatusLabel } from '../../shared/offer-track';
 import { button, el } from '../../shared/ui';
 import { serializeTodoBody } from '../../shared/todo-body';
 
@@ -31,6 +33,27 @@ interface HistoryEntry {
 const history: HistoryEntry[] = [];
 const HISTORY_CAP = 100;
 let historyHost: HTMLElement | null = null;
+/** Offer round-trip status (correlation_id ベース、PKC2#804)。 */
+const tracker = new OfferTracker();
+let offersHost: HTMLElement | null = null;
+
+function renderOffers(): void {
+  if (!offersHost) return;
+  offersHost.replaceChildren();
+  const records = tracker.all();
+  if (records.length === 0) {
+    offersHost.appendChild(el('div', 'pkc-hint', 'まだ送信していません — Enter で送信できます'));
+    return;
+  }
+  for (const rec of [...records].reverse()) {
+    const row = el('div', `pkc-history-row pkc-offer-${rec.status}`);
+    const t = new Date(rec.sentAt);
+    const hh = `${String(t.getHours()).padStart(2, '0')}:${String(t.getMinutes()).padStart(2, '0')}:${String(t.getSeconds()).padStart(2, '0')}`;
+    row.appendChild(el('span', 'pkc-history-time', hh));
+    row.appendChild(el('span', 'pkc-history-text', `"${rec.title}" — ${offerStatusLabel(rec)}`));
+    offersHost.appendChild(row);
+  }
+}
 
 function pushHistory(kind: HistoryEntry['kind'], text: string): void {
   history.push({ at: new Date().toISOString(), kind, text });
@@ -70,10 +93,23 @@ export function mountTodoSender(root: HTMLElement): { conn: HostConnection } {
     onNote: (text) => pushHistory('note', text),
     onEnvelope: (inbound) => {
       if (!inbound.viaHost) return;
-      if (inbound.envelope.type === 'record:reject') {
-        const p = inbound.envelope.payload as { reason?: unknown } | null;
+      const { type, payload } = inbound.envelope;
+      if (type === 'record:ack') {
+        if (tracker.resolveAck(payload)) renderOffers();
+        return;
+      }
+      if (type === 'record:accept') {
+        if (tracker.resolveAccept(payload)) renderOffers();
+        return;
+      }
+      if (type === 'record:reject') {
+        if (tracker.resolveReject(payload)) {
+          renderOffers();
+          return;
+        }
+        const p = payload as { reason?: unknown } | null;
         const reason = p && typeof p.reason === 'string' ? p.reason : '?';
-        pushHistory('reject', `record:reject 受信(reason=${reason})— どの todo かは v1 では特定できません(SR-02)`);
+        pushHistory('reject', `record:reject 受信(reason=${reason})— 旧 host は correlation echo が無く特定不能(PKC2#804 対応 host で解消)`);
       }
     },
   });
@@ -110,9 +146,11 @@ export function mountTodoSender(root: HTMLElement): { conn: HostConnection } {
       body: serializeTodoBody(desc, date.value),
       archetype: 'todo',
     };
-    const sent = conn.send('record:offer', payload);
+    const correlationId = makeCorrelationId();
+    const sent = conn.send('record:offer', payload, { correlationId });
     if (sent) {
-      pushHistory('sent', `送信: "${desc}"${date.value ? `(期日 ${date.value})` : ''}`);
+      tracker.begin(correlationId, desc + (date.value ? `(期日 ${date.value})` : ''));
+      renderOffers();
       description.value = '';
       description.focus();
     }
@@ -136,13 +174,21 @@ export function mountTodoSender(root: HTMLElement): { conn: HostConnection } {
   );
   root.appendChild(form);
 
+  const offers = el('div', 'pkc-panel');
+  offers.setAttribute('data-pkc-region', 'todo-offers');
+  offers.appendChild(el('div', 'pkc-panel-heading', 'オファー状況'));
+  offersHost = el('div', 'pkc-history-list');
+  offers.appendChild(offersHost);
+  root.appendChild(offers);
+
   const hist = el('div', 'pkc-panel');
   hist.setAttribute('data-pkc-region', 'todo-history');
-  hist.appendChild(el('div', 'pkc-panel-heading', '履歴(このセッションのみ)'));
+  hist.appendChild(el('div', 'pkc-panel-heading', 'メモ(このセッションのみ)'));
   historyHost = el('div', 'pkc-history-list');
   hist.appendChild(historyHost);
   root.appendChild(hist);
 
+  renderOffers();
   renderHistory();
   description.focus();
   return { conn };
