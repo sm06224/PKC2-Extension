@@ -32,6 +32,7 @@ PKC2 の **PKC-Message** プロトコル (`pkc-message` v1) を使う **単一 H
 | B14 daily-log-starter | #36 | `dist/pkc2-daily-log-starter.html` | テンプレから今日の textlog をワンクリック offer |
 | C1 export-downloader | #38 | `dist/pkc2-export-downloader.html` | embedded ホストに export:request し、export:result の HTML をそのままファイル保存(描画・解析しない) |
 | D1 multi-broadcaster | #46 | `dist/pkc2-multi-broadcaster.html` | 複数 PKC2 を iframe スロットで並べ、同一レコードを一斉 record:offer。スロット別に ack/accept/reject を相関表示(PKC2#804) |
+| D2 a-to-b-bridge | #47 | `dist/pkc2-a-to-b-bridge.html` | 承認パイプライン: 本ツール発の offer が A で accept されたら同一 payload を B へ自動転送(record:accept の correlation echo 検知、保留/再開可) |
 | E1 reading-list | #52 | `dist/pkc2-reading-list.html` | URL 読書管理(積読/読書中/読了)+ 項目ごとに source_url 付き offer |
 | E2 expense-tracker | #53 | `dist/pkc2-expense-tracker.html` | 記帳 → 「¥金額 内容 #カテゴリ」の textlog offer(form 固定 3 フィールドのため方針変更) |
 | E3 habit-tracker | #54 | `dist/pkc2-habit-tracker.html` | 習慣リスト → 今日の期日付き todo 群を一括生成 |

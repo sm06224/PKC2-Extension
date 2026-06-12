@@ -1,0 +1,16 @@
+/* D2 a-to-b-bridge — layout on top of shared/base.css. */
+
+.pkc-d2-root { max-width: 1100px; margin: 0 auto; padding: 12px; display: flex; flex-direction: column; gap: 10px; }
+.pkc-d2-header { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+.pkc-d2-title { font-weight: 600; font-size: 15px; }
+.pkc-d2-root input[type="text"], .pkc-d2-root select { width: 100%; margin-top: 6px; }
+.pkc-d2-root textarea { width: 100%; box-sizing: border-box; margin-top: 6px; }
+.pkc-d2-slots { display: flex; gap: 10px; }
+.pkc-d2-slot {
+  flex: 1 1 50%; border: 1px solid var(--c-border); border-radius: 4px;
+  background: var(--c-surface); padding: 8px 10px;
+  display: flex; flex-direction: column; gap: 6px; min-width: 0;
+}
+.pkc-d2-log { display: flex; flex-direction: column; gap: 2px; max-height: 240px; overflow-y: auto; font-size: 12px; }
+.pkc-d2-logrow { color: var(--c-fg); }
+@media (max-width: 900px) { .pkc-d2-slots { flex-direction: column; } }
