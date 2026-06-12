@@ -220,9 +220,13 @@ function sendPing(manual: boolean): void {
   }, PING_RETRY_MS);
 }
 
-function classifyForeign(_data: unknown): string {
-  // bespoke pkc-graph-ext v1 は廃止(PKC2#806 rev.2 — host-push 体系へ直接
-  // 切替)。特別扱いせず一律 non-pkc 表示。
+function classifyForeign(data: unknown): string {
+  // host-push 体系の pkc-ext v1 チャネル(PKC2#816)は別 wire — foreign
+  // 扱いだが type ラベルで識別できるようにする。
+  if (data !== null && typeof data === 'object') {
+    const d = data as { pkc?: unknown; t?: unknown };
+    if (d.pkc === 'pkc-ext' && typeof d.t === 'string') return `ext:${d.t}`;
+  }
   return '(non-pkc)';
 }
 
@@ -764,7 +768,7 @@ export function mountProbe(root: HTMLElement): void {
       "受信は event.source の同一性 + origin で host を判定し、表示するだけ(内容で動作は変わりません)",
     ],
     notes: [
-      "非 PKC メッセージは既定で非表示 — トグルで表示",
+      "非 PKC メッセージ(pkc-ext チャネル等)は既定で非表示 — トグルで表示(ext:projection / ext:deliver として識別表示)",
       "ログは最大 500 件(古い順に破棄)",
       "export:request は embedded ホスト限定 — launcher 起動の standalone ホストでは無応答になります(それ自体が capability gate の観測)",
     ],

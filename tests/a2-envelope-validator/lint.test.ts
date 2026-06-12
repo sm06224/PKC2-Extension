@@ -69,9 +69,10 @@ describe('lintEnvelope', () => {
     expect(ct.some((x) => x.level === 'error' && x.text.includes('color_tag'))).toBe(true);
   });
 
-  it('notes host-push types (PKC2#806 rev.2)', () => {
-    expect(lintEnvelope(valid({ type: 'pkc:deliver' })).some((x) => x.text.includes('host → 拡張'))).toBe(true);
-    expect(lintEnvelope(valid({ type: 'pkc:write' })).some((x) => x.text.includes('T2'))).toBe(true);
+  it('pkc:* を envelope として貼ると INVALID + 別チャネル案内(PKC2#816)', () => {
+    const f = lintEnvelope(valid({ type: 'pkc:deliver' }));
+    expect(f.some((x) => x.level === 'error' && x.text.includes('INVALID_TYPE'))).toBe(true);
+    expect(f.some((x) => x.level === 'info' && x.text.includes('pkc-ext'))).toBe(true);
   });
 
   it('flags oversized record:offer bodies', () => {

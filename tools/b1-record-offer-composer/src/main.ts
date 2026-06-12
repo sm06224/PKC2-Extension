@@ -273,8 +273,8 @@ export function mountComposer(root: HTMLElement): { conn: HostConnection } {
     capturedNow: document.createElement('input'),
     tags: textInput('カンマ区切り(≤20 件・各 ≤64 文字、PKC2#805)'),
     colorTag: textInput('色 ID(未知 ID は host 側で null 化、offer は生きる)'),
-    mimeType: textInput('MIME(SR-14 — host 実装中、現行は無視)'),
-    filename: textInput('ファイル名(SR-14 — 同上)'),
+    mimeType: textInput('MIME(SR-14、PKC2#814 で受理)'),
+    filename: textInput('ファイル名(SR-14、PKC2#814 で受理)'),
     kind: textInput('video / audio / book など'),
     thumbnailUrl: textInput('https://…'),
     provider: textInput('YouTube / Kindle など'),
@@ -318,7 +318,7 @@ export function mountComposer(root: HTMLElement): { conn: HostConnection } {
   form.appendChild(fieldRow('tags', inputs.tags));
   form.appendChild(fieldRow('color_tag', inputs.colorTag));
   const sr14 = el('details', 'pkc-v11-details');
-  sr14.appendChild(el('summary', 'pkc-hint', 'SR-14 フィールド(mime_type / filename — host 実装中)'));
+  sr14.appendChild(el('summary', 'pkc-hint', 'SR-14 フィールド(mime_type / filename — PKC2#814 着地済み)'));
   sr14.appendChild(fieldRow('mime_type', inputs.mimeType));
   sr14.appendChild(fieldRow('filename', inputs.filename));
   form.appendChild(sr14);
