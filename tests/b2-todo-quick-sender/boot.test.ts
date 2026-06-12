@@ -88,6 +88,18 @@ describe('todo quick sender', () => {
     expect(root.querySelector('[data-pkc-region="todo-offers"]')?.textContent).toContain('到達');
   });
 
+  it('priority select maps to tags (PKC2#805)', () => {
+    sentToHost.length = 0;
+    const pr = root.querySelector<HTMLSelectElement>('[data-pkc-field="todo-priority"]')!;
+    pr.value = '高';
+    const desc = input();
+    desc.value = '優先タスク';
+    pressEnter(desc);
+    const env = sentToHost[0] as { payload: { tags?: string[] } };
+    expect(env.payload.tags).toEqual(['優先度:高']);
+    pr.value = '';
+  });
+
   it('rejects empty description with an inline error and sends nothing', () => {
     sentToHost.length = 0;
     const desc = input();

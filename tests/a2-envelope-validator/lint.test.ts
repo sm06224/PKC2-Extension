@@ -54,10 +54,24 @@ describe('lintEnvelope', () => {
     expect(f.some((x) => x.level === 'error' && x.text.includes('body'))).toBe(true);
   });
 
-  it('flags forbidden assets and ignored tags in record:offer', () => {
+  it('flags forbidden assets; valid tags are now accepted info (PKC2#805)', () => {
     const f = lintEnvelope(valid({ type: 'record:offer', payload: { title: 't', body: 'b', assets: {}, tags: ['x'] } }));
     expect(f.some((x) => x.level === 'error' && x.text.includes('assets'))).toBe(true);
-    expect(f.some((x) => x.level === 'warn' && x.text.includes('tags'))).toBe(true);
+    expect(f.some((x) => x.level === 'info' && x.text.includes('tags: 1 件'))).toBe(true);
+  });
+
+  it('rejects invalid tags / color_tag shapes per #805 host rules', () => {
+    const bad = lintEnvelope(valid({ type: 'record:offer', payload: { title: 't', body: 'b', tags: 'not-array' } }));
+    expect(bad.some((x) => x.level === 'error' && x.text.includes('tags'))).toBe(true);
+    const many = lintEnvelope(valid({ type: 'record:offer', payload: { title: 't', body: 'b', tags: Array.from({ length: 21 }, (_, i) => `t${i}`) } }));
+    expect(many.some((x) => x.level === 'error' && x.text.includes('tags'))).toBe(true);
+    const ct = lintEnvelope(valid({ type: 'record:offer', payload: { title: 't', body: 'b', color_tag: 9 } }));
+    expect(ct.some((x) => x.level === 'error' && x.text.includes('color_tag'))).toBe(true);
+  });
+
+  it('notes host-push types (PKC2#806 rev.2)', () => {
+    expect(lintEnvelope(valid({ type: 'pkc:deliver' })).some((x) => x.text.includes('host → 拡張'))).toBe(true);
+    expect(lintEnvelope(valid({ type: 'pkc:write' })).some((x) => x.text.includes('T2'))).toBe(true);
   });
 
   it('flags oversized record:offer bodies', () => {

@@ -16,6 +16,7 @@ import '../../shared/base.css';
 import './sender.css';
 import { helpButton } from '../../shared/help';
 import { makeCorrelationId } from '../../shared/envelope';
+import { selectInput } from '../../shared/ui';
 import { createHostConnection, type HostConnection } from '../../shared/host-connect';
 import { OfferTracker, offerStatusLabel } from '../../shared/offer-track';
 import { button, el } from '../../shared/ui';
@@ -99,7 +100,7 @@ export function mountTodoSender(root: HTMLElement): { conn: HostConnection } {
       "title = 入力した本文、body は PKC2 の todo JSON({status:'open', description, date?, archived:false})で送信されます",
     ],
     notes: [
-      "優先度 / タグは v1 payload に存在しません(SR-08)",
+      "優先度は tags(優先度:高 等、PKC2#805)として entry に付与されます",
     ],
   }));
   root.appendChild(header);
@@ -149,6 +150,16 @@ export function mountTodoSender(root: HTMLElement): { conn: HostConnection } {
   const err = el('div', 'pkc-form-error');
   err.setAttribute('data-pkc-region', 'todo-error');
 
+  // #805 で tags が解禁されたため、計画どおり優先度セレクタを実装。
+  const priority = selectInput([
+    { value: '', label: '優先度: なし' },
+    { value: '高', label: '優先度: 高' },
+    { value: '中', label: '優先度: 中' },
+    { value: '低', label: '優先度: 低' },
+  ]);
+  priority.classList.add('pkc-todo-priority');
+  priority.setAttribute('data-pkc-field', 'todo-priority');
+
   function send(): void {
     err.textContent = '';
     const desc = description.value.trim();
@@ -162,6 +173,7 @@ export function mountTodoSender(root: HTMLElement): { conn: HostConnection } {
       body: serializeTodoBody(desc, date.value),
       archetype: 'todo',
     };
+    if (priority.value !== '') payload['tags'] = [`優先度:${priority.value}`];
     const correlationId = makeCorrelationId();
     const sent = conn.send('record:offer', payload, { correlationId });
     if (sent) {
@@ -182,11 +194,12 @@ export function mountTodoSender(root: HTMLElement): { conn: HostConnection } {
   const row = el('div', 'pkc-todo-row');
   row.appendChild(description);
   row.appendChild(date);
+  row.appendChild(priority);
   row.appendChild(button('Add', 'pkc-btn', send));
   form.appendChild(row);
   form.appendChild(err);
   form.appendChild(
-    el('div', 'pkc-hint', 'entry title = やること本文。優先度/タグは v1 payload に存在しません(SR-08)。応答なし=受理待ち or 未達(§8.3)'),
+    el('div', 'pkc-hint', 'entry title = やること本文。優先度は tags(優先度:高 等)として送信されます(PKC2#805)。応答なし=受理待ち or 未達(§8.3)'),
   );
   root.appendChild(form);
 

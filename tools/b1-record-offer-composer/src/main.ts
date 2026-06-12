@@ -97,6 +97,10 @@ interface FormInputs {
   todoDate: HTMLInputElement;
   sourceUrl: HTMLInputElement;
   capturedNow: HTMLInputElement;
+  tags: HTMLInputElement;
+  colorTag: HTMLInputElement;
+  mimeType: HTMLInputElement;
+  filename: HTMLInputElement;
   kind: HTMLInputElement;
   thumbnailUrl: HTMLInputElement;
   provider: HTMLInputElement;
@@ -114,6 +118,10 @@ function readForm(i: FormInputs): OfferFormState {
     todoDate: i.todoDate.value,
     sourceUrl: i.sourceUrl.value,
     capturedNow: i.capturedNow.checked,
+    tags: i.tags.value,
+    colorTag: i.colorTag.value,
+    mimeType: i.mimeType.value,
+    filename: i.filename.value,
     kind: i.kind.value,
     thumbnailUrl: i.thumbnailUrl.value,
     provider: i.provider.value,
@@ -131,6 +139,10 @@ function writeForm(i: FormInputs, f: OfferFormState): void {
   i.todoDate.value = f.todoDate;
   i.sourceUrl.value = f.sourceUrl;
   i.capturedNow.checked = f.capturedNow;
+  i.tags.value = f.tags;
+  i.colorTag.value = f.colorTag;
+  i.mimeType.value = f.mimeType;
+  i.filename.value = f.filename;
   i.kind.value = f.kind;
   i.thumbnailUrl.value = f.thumbnailUrl;
   i.provider.value = f.provider;
@@ -201,7 +213,7 @@ export function mountComposer(root: HTMLElement): { conn: HostConnection } {
       "correlation_id を自動付与 — 対応 host(PKC2#804)は ack / accept / reject に echo を返し、状況がライブ更新されます。旧 host では従来どおり相関不能の注記になります",
     ],
     notes: [
-      "tags / assets は v1 payload に存在しません",
+      "tags / color_tag は v1.x で送信可能(PKC2#805 — 件数 ≤20・各 ≤64 文字)。assets の同送は引き続き禁止",
       "body cap 262,144 UTF-16 units",
       "入力はドラフトとして localStorage に自動保存(「フォームをクリア」で削除)",
     ],
@@ -259,6 +271,10 @@ export function mountComposer(root: HTMLElement): { conn: HostConnection } {
     todoDate: document.createElement('input'),
     sourceUrl: textInput('https://…(任意、body 先頭に provenance 注入)'),
     capturedNow: document.createElement('input'),
+    tags: textInput('カンマ区切り(≤20 件・各 ≤64 文字、PKC2#805)'),
+    colorTag: textInput('色 ID(未知 ID は host 側で null 化、offer は生きる)'),
+    mimeType: textInput('MIME(SR-14 — host 実装中、現行は無視)'),
+    filename: textInput('ファイル名(SR-14 — 同上)'),
     kind: textInput('video / audio / book など'),
     thumbnailUrl: textInput('https://…'),
     provider: textInput('YouTube / Kindle など'),
@@ -299,6 +315,13 @@ export function mountComposer(root: HTMLElement): { conn: HostConnection } {
   form.appendChild(todoRows);
   form.appendChild(fieldRow('source_url', inputs.sourceUrl));
   form.appendChild(capturedLabel);
+  form.appendChild(fieldRow('tags', inputs.tags));
+  form.appendChild(fieldRow('color_tag', inputs.colorTag));
+  const sr14 = el('details', 'pkc-v11-details');
+  sr14.appendChild(el('summary', 'pkc-hint', 'SR-14 フィールド(mime_type / filename — host 実装中)'));
+  sr14.appendChild(fieldRow('mime_type', inputs.mimeType));
+  sr14.appendChild(fieldRow('filename', inputs.filename));
+  form.appendChild(sr14);
   form.appendChild(v11);
 
   errorHost = el('div', 'pkc-form-error');
@@ -332,7 +355,7 @@ export function mountComposer(root: HTMLElement): { conn: HostConnection } {
   form.appendChild(btnRow);
   form.appendChild(errorHost);
   form.appendChild(
-    el('div', 'pkc-hint', 'tags / assets は v1 payload に存在しません(SR-08 / spec §6.3)。入力内容はドラフトとして localStorage に自動保存されます'),
+    el('div', 'pkc-hint', 'tags / color_tag は v1.x で受理されます(PKC2#805、同意 banner に表示)。assets の同送は引き続き禁止 — 実体の受け渡しは host-push(pkc:deliver、PKC2#806)へ。入力はドラフトとして localStorage に自動保存'),
   );
   root.appendChild(form);
 
