@@ -44,6 +44,7 @@ PKC2 の **PKC-Message** プロトコル (`pkc-message` v1) を使う **単一 H
 | F6 pdf-viewer | #64 | `dist/pkc2-pdf-viewer.html` | pdf.js 同梱のオフライン PDF ビューア。standalone(ファイル/ドラッグ&ドロップ)+ T1 受動受信(projection 索引 → 送付ジェスチャで表示、PKC2#806)~1.6MB |
 | F7 mermaid-editor | #65 | `dist/pkc2-mermaid-editor.html` | Mermaid ライブ編集(テンプレ・テーマ・SVG/PNG 保存)。ソースを ```mermaid fence の text entry として offer(mermaid 同梱 ~3MB・オフライン) |
 | F8 drawio-editor | #66 | `dist/pkc2-drawio-editor.html` | .drawio の XML ソース編集 + 簡易 SVG プレビュー(圧縮保存形式も展開)。保存は非圧縮 mxfile。standalone + T1 受動受信 |
+| F9 md-note | #67 | `dist/pkc2-md-note.html` | Markdown + Mermaid の 3 ペインノート(アウトライン/エディタ/プレビュー)。自作ミニパーサ(生 HTML はテキスト扱い・リンクは http(s) のみ)、本文を text offer(mermaid 同梱 ~3MB) |
 | F10 canvas-sketcher | #68 | `dist/pkc2-canvas-sketcher.html` | 手書きキャンバス(筆圧/undo/redo/消しゴム)→ SVG/PNG ローカル保存。v1 では attachment offer 不可のため standalone 専用(壁 #80) |
 
 ### 使い方(A1 message-probe)
