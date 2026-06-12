@@ -22,9 +22,11 @@ PKC2 の **PKC-Message** プロトコル (`pkc-message` v1) を使う **単一 H
 | B1 record-offer-composer | #23 | `dist/pkc2-offer-composer.html` | 任意 archetype の record:offer を組み立てて送信。live envelope プレビュー、todo body 自動 JSON 化、v1.1 capture フィールド、ドラフト自動保存、correlation_id で ack/accept/reject を相関表示(PKC2#804) |
 | B2 todo-quick-sender | #24 | `dist/pkc2-todo-quick.html` | キーボードファーストの todo 専用送信。Enter で即 offer、送信後フォーカス復帰、オファー状況の相関表示(PKC2#804) |
 | B3 textlog-journaler | #25 | `dist/pkc2-textlog-journaler.html` | ローカルに連続追記(localStorage 保持)→ まとめて 1 つの textlog として offer |
+| B4 web-clipper | #26 | `dist/pkc2-web-clipper.html` | コピーしたページを貼り付け → HTML を inert 抽出して text offer(title 自動、source_url 付き)。URL fetch は CORS のため非対応(ペーストモード) |
 | B6 csv-importer | #28 | `dist/pkc2-csv-importer.html` | CSV(ヘッダ行 + 列マッピング)を 1 行 = 1 offer で間隔送信(上限 200 行・停止可) |
 | B7 markdown-batch | #29 | `dist/pkc2-markdown-batch.html` | 複数 .md を 1 ファイル = 1 offer で送信(front-matter の title/archetype/source_url 解釈) |
 | B8 bookmark-importer | #30 | `dist/pkc2-bookmark-importer.html` | bookmarks.html をフォルダ階層付きで text offer 化(http(s) のみ・上限 200) |
+| B9 rss-fetcher | #31 | `dist/pkc2-rss-fetcher.html` | RSS 2.0 / Atom XML を貼り付け / ファイルで読み込み、選択記事を 1 件 = 1 offer で間隔送信(description は inert テキスト化、link は http(s) のみ) |
 | B15 form-template | #37 | `dist/pkc2-form-template.html` | form archetype(name/note/checked 固定 3 フィールド)をテンプレから offer |
 | B13 pomodoro-logger | #35 | `dist/pkc2-pomodoro-logger.html` | 集中タイマー完了で textlog を自動 offer(時間帯・ラベル付き) |
 | B14 daily-log-starter | #36 | `dist/pkc2-daily-log-starter.html` | テンプレから今日の textlog をワンクリック offer |
