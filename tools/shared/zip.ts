@@ -59,7 +59,8 @@ export function listZip(bytes: Uint8Array): ZipEntry[] {
   return entries;
 }
 
-async function inflateRaw(data: Uint8Array, cap: number): Promise<Uint8Array | null> {
+/** raw deflate を展開(cap 超過 / 破損は null)。drawio 圧縮形式でも使用。 */
+export async function inflateRaw(data: Uint8Array, cap: number): Promise<Uint8Array | null> {
   try {
     const src = new ReadableStream<Uint8Array>({
       start(c) {

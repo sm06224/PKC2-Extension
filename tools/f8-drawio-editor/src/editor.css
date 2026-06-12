@@ -1,0 +1,20 @@
+/* F8 drawio-editor — layout on top of shared/base.css. */
+
+.pkc-drawio-root { max-width: 1200px; margin: 0 auto; padding: 12px; display: flex; flex-direction: column; gap: 10px; }
+.pkc-drawio-header { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+.pkc-drawio-title { font-weight: 600; font-size: 15px; }
+.pkc-drawio-indexrow { display: flex; gap: 8px; align-items: baseline; margin: 2px 0; }
+.pkc-drawio-indextitle { flex: 1 1 auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pkc-drawio-tabs { display: flex; gap: 4px; flex-wrap: wrap; margin: 6px 0; }
+.pkc-drawio-tab-active { border-color: var(--c-accent); background: #1a2413; }
+.pkc-drawio-split { display: flex; gap: 10px; min-height: 380px; }
+.pkc-drawio-source {
+  flex: 1 1 50%; min-height: 380px; resize: vertical;
+  font-family: ui-monospace, monospace; font-size: 12px; line-height: 1.5;
+}
+.pkc-drawio-preview {
+  flex: 1 1 50%; border: 1px solid var(--c-border); border-radius: 4px;
+  background: var(--c-surface-2); padding: 8px; overflow: auto;
+}
+.pkc-drawio-preview svg { width: 100%; height: auto; max-height: 60vh; }
+@media (max-width: 900px) { .pkc-drawio-split { flex-direction: column; } }
