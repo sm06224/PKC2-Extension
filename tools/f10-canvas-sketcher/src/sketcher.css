@@ -1,0 +1,13 @@
+/* F10 canvas-sketcher — layout on top of shared/base.css. */
+
+.pkc-sk-root { max-width: 1100px; margin: 0 auto; padding: 12px; display: flex; flex-direction: column; gap: 10px; height: calc(100vh - 24px); box-sizing: border-box; }
+.pkc-sk-header { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+.pkc-sk-title { font-weight: 600; font-size: 15px; }
+.pkc-sk-toolbar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.pkc-sk-toolbar input[type="color"] { width: 36px; height: 28px; padding: 0; border: 1px solid var(--c-border); border-radius: 3px; background: var(--c-surface-2); flex: 0 0 auto; }
+.pkc-sk-toolbar input[type="range"] { flex: 0 1 140px; }
+.pkc-sk-canvas {
+  flex: 1 1 auto; min-height: 320px; width: 100%;
+  border: 1px solid var(--c-border); border-radius: 4px;
+  background: #fff; cursor: crosshair; touch-action: none;
+}
