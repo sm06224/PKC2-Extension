@@ -39,9 +39,6 @@ function typeOf(data: unknown): { kind: 'pkc' | 'foreign'; type: string } {
     if (d['protocol'] === 'pkc-message') {
       return { kind: 'pkc', type: typeof d['type'] === 'string' ? d['type'] : '(?)' };
     }
-    if (d['pkc'] === 'pkc-graph-ext' && typeof d['t'] === 'string') {
-      return { kind: 'foreign', type: `graph:${d['t']}` };
-    }
   }
   return { kind: 'foreign', type: '(non-pkc)' };
 }
@@ -170,7 +167,7 @@ export function mountRecorder(root: HTMLElement): { conn: HostConnection } {
     state.includeForeign = foreignToggle.checked;
   });
   foreignLabel.appendChild(foreignToggle);
-  foreignLabel.appendChild(document.createTextNode(' 非 PKC メッセージも記録(pkc-graph-ext 等)'));
+  foreignLabel.appendChild(document.createTextNode(' 非 PKC メッセージも記録'));
   panel.appendChild(foreignLabel);
 
   countEl = el('div', 'pkc-rec-count');

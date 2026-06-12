@@ -99,7 +99,20 @@ export function lintEnvelope(raw: string): Finding[] {
         findings.push({ level: 'error', text: 'payload に assets を含めるのは禁止(§6.3)' });
       }
       if ('tags' in p) {
-        findings.push({ level: 'warn', text: 'tags は v1 payload に存在せず、host は黙って無視します(SR-08)' });
+        const t = p['tags'];
+        if (!Array.isArray(t) || t.length > 20 || t.some((x) => typeof x !== 'string' || x.length > 64)) {
+          findings.push({ level: 'error', text: 'tags は string[](≤20 件・各 ≤64 文字)— 違反は payload 全体 reject(PKC2#805)' });
+        } else {
+          findings.push({ level: 'info', text: `tags: ${t.length} 件(v1.x、PKC2#805 — 同意 banner に表示され accept 時に entry へ付与)` });
+        }
+      }
+      if ('color_tag' in p && typeof p['color_tag'] !== 'string') {
+        findings.push({ level: 'error', text: 'color_tag は string 必須(未知 ID は host が field のみ null 化、PKC2#805)' });
+      }
+      for (const f14 of ['mime_type', 'filename'] as const) {
+        if (f14 in p && typeof p[f14] !== 'string') {
+          findings.push({ level: 'warn', text: `${f14} は string を推奨(SR-14 — host 実装中)` });
+        }
       }
       break;
     }
@@ -115,6 +128,16 @@ export function lintEnvelope(raw: string): Finding[] {
     case 'record:ack':
     case 'record:reject': {
       findings.push({ level: 'info', text: `${String(d['type'])} は host → sender 方向の type です(sender から送るものではありません)` });
+      break;
+    }
+    case 'pkc:projection':
+    case 'pkc:deliver':
+    case 'pkc:write-result': {
+      findings.push({ level: 'info', text: `${String(d['type'])} は host → 拡張方向の type(host-push 体系、PKC2#806 rev.2)。schema は host 実装 PR で normative 化予定` });
+      break;
+    }
+    case 'pkc:write': {
+      findings.push({ level: 'info', text: 'pkc:write は T2(io権)拡張 → host 方向。host が全 op を検証してから適用(PKC2#806 rev.2、schema は実装 PR で確定)' });
       break;
     }
     case 'record:accept': {

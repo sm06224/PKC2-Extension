@@ -3,8 +3,7 @@
  *
  * Connects to a host PKC2 over `postMessage` and shows everything that
  * flows: ping/pong + PongProfile, every envelope (valid or rejected, with
- * the spec §4.2 reject code), plus optional non-PKC traffic (e.g. the
- * launcher's pkc-graph-ext channel). Includes composers for record:offer /
+ * the spec §4.2 reject code), plus optional non-PKC traffic. Includes composers for record:offer /
  * export:request / navigate / custom and a raw-envelope sender for
  * deliberately exercising host-side validation.
  *
@@ -221,11 +220,9 @@ function sendPing(manual: boolean): void {
   }, PING_RETRY_MS);
 }
 
-function classifyForeign(data: unknown): string {
-  if (data !== null && typeof data === 'object') {
-    const d = data as { pkc?: unknown; t?: unknown };
-    if (d.pkc === 'pkc-graph-ext' && typeof d.t === 'string') return `graph:${d.t}`;
-  }
+function classifyForeign(_data: unknown): string {
+  // bespoke pkc-graph-ext v1 は廃止(PKC2#806 rev.2 — host-push 体系へ直接
+  // 切替)。特別扱いせず一律 non-pkc 表示。
   return '(non-pkc)';
 }
 
@@ -627,31 +624,6 @@ function buildAdvanced(): HTMLElement {
     }
   }, '不正 envelope の送信でホスト側 validation を観測できます');
 
-  const graphHello = button('pkc-graph-ext hello を送る', 'pkc-btn-small', () => {
-    if (!state.link) {
-      note('送信失敗: ホスト未接続(graph hello)');
-      return;
-    }
-    state.showForeign = true;
-    savePrefs();
-    const foreignToggle = document.querySelector<HTMLInputElement>('[data-pkc-field="show-foreign"]');
-    if (foreignToggle) foreignToggle.checked = true;
-    const msg = { pkc: 'pkc-graph-ext', v: 1, t: 'hello' };
-    sendToHost(state.link, msg);
-    log.push({
-      at: new Date().toISOString(),
-      direction: 'out',
-      kind: 'foreign',
-      type: 'graph:hello',
-      sourceId: null,
-      targetId: null,
-      origin: '-',
-      viaHost: true,
-      data: msg,
-    });
-    scheduleLogRender();
-  }, 'launcher 経路(pkc-graph-ext)の welcome + GraphProjection を観測します(launcher 起動時のみ有効)');
-
   const selfTest = button('ローカル自己テスト', 'pkc-btn-small', () => {
     const samples: Array<[string, unknown]> = [
       ['有効な ping', buildEnvelope('ping', {}, { sourceId: TOOL_ID })],
@@ -668,7 +640,6 @@ function buildAdvanced(): HTMLElement {
   const btnRow = el('div', 'pkc-btn-row');
   btnRow.appendChild(validate);
   btnRow.appendChild(send);
-  btnRow.appendChild(graphHello);
   btnRow.appendChild(selfTest);
   box.appendChild(btnRow);
   box.appendChild(result);
@@ -793,7 +764,7 @@ export function mountProbe(root: HTMLElement): void {
       "受信は event.source の同一性 + origin で host を判定し、表示するだけ(内容で動作は変わりません)",
     ],
     notes: [
-      "非 PKC メッセージ(pkc-graph-ext 等)は既定で非表示 — トグルで表示",
+      "非 PKC メッセージは既定で非表示 — トグルで表示",
       "ログは最大 500 件(古い順に破棄)",
       "export:request は embedded ホスト限定 — launcher 起動の standalone ホストでは無応答になります(それ自体が capability gate の観測)",
     ],

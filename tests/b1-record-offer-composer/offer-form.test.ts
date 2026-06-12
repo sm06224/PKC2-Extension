@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest';
 import {
   buildOfferPayload,
   emptyOfferForm,
+  MAX_OFFER_TAGS,
+  parseTagsInput,
   serializeTodoBody,
   type OfferFormState,
 } from '../../tools/b1-record-offer-composer/src/offer-form';
@@ -92,6 +94,34 @@ describe('buildOfferPayload', () => {
     expect(buildOfferPayload(form({ title: 'T', durationSec: 'abc' }), NOW).ok).toBe(false);
     expect(buildOfferPayload(form({ title: 'T', pages: '-3' }), NOW).ok).toBe(false);
     expect(buildOfferPayload(form({ title: 'T', pages: '12.5' }), NOW).ok).toBe(false);
+  });
+});
+
+describe('tags / color_tag / SR-14 fields (PKC2#805 + SR-14 先行)', () => {
+  it('parseTagsInput mirrors host normalization (trim / dedupe / caps)', () => {
+    const r = parseTagsInput(' a, b ,a,, c ');
+    expect(r.ok && r.tags).toEqual(['a', 'b', 'c']);
+    const over = parseTagsInput(Array.from({ length: MAX_OFFER_TAGS + 1 }, (_, i) => `t${i}`).join(','));
+    expect(over.ok).toBe(false);
+    expect(parseTagsInput(`${'x'.repeat(65)}`).ok).toBe(false);
+  });
+
+  it('includes tags / color_tag / mime_type / filename only when present', () => {
+    const r = buildOfferPayload(form({ title: 'T', tags: 'a, b', colorTag: 'red', mimeType: 'application/pdf', filename: 'x.pdf' }), NOW);
+    expect(r.ok).toBe(true);
+    if (r.ok) {
+      expect(r.payload['tags']).toEqual(['a', 'b']);
+      expect(r.payload['color_tag']).toBe('red');
+      expect(r.payload['mime_type']).toBe('application/pdf');
+      expect(r.payload['filename']).toBe('x.pdf');
+    }
+    const none = buildOfferPayload(form({ title: 'T' }), NOW);
+    expect(none.ok && !('tags' in none.payload) && !('mime_type' in none.payload)).toBe(true);
+  });
+
+  it('over-cap tags fail the build (avoid host-side whole-payload reject)', () => {
+    const r = buildOfferPayload(form({ title: 'T', tags: Array.from({ length: 21 }, (_, i) => `t${i}`).join(',') }), NOW);
+    expect(r.ok).toBe(false);
   });
 });
 

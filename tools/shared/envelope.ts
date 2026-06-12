@@ -28,6 +28,13 @@ export const KNOWN_TYPES = [
   'export:result',
   'navigate',
   'custom',
+  // host-push 体系(PKC2#806 rev.2 通達、2026-06-12)。schema は host 実装
+  // PR で normative 化される予定 — type 名のみ先行登録(届いたものを
+  // INVALID_TYPE にしないため)。
+  'pkc:projection',
+  'pkc:deliver',
+  'pkc:write',
+  'pkc:write-result',
 ] as const;
 export type MessageType = (typeof KNOWN_TYPES)[number];
 

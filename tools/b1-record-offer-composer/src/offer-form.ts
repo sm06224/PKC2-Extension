@@ -12,6 +12,30 @@
 import { BODY_SIZE_CAP_UTF16_UNITS } from '../../shared/envelope';
 import { serializeTodoBody } from '../../shared/todo-body';
 
+/** #805 のホスト上限をミラー(超過は payload 全体 reject される)。 */
+export const MAX_OFFER_TAGS = 20;
+export const MAX_OFFER_TAG_LENGTH = 64;
+
+/**
+ * カンマ区切り → tags 配列(trim / 空除去 / 重複除去 — host の
+ * validateOfferTags と同じ正規化)。上限違反は error。Pure.
+ */
+export function parseTagsInput(raw: string): { ok: true; tags: string[] } | { ok: false; error: string } {
+  const out: string[] = [];
+  const seen = new Set<string>();
+  for (const part of raw.split(',')) {
+    const t = part.trim();
+    if (t === '' || seen.has(t)) continue;
+    if (t.length > MAX_OFFER_TAG_LENGTH) {
+      return { ok: false, error: `tag が長すぎます(≤ ${MAX_OFFER_TAG_LENGTH} 文字): ${t.slice(0, 20)}…` };
+    }
+    seen.add(t);
+    out.push(t);
+  }
+  if (out.length > MAX_OFFER_TAGS) return { ok: false, error: `tags は ${MAX_OFFER_TAGS} 件まで(現在 ${out.length})` };
+  return { ok: true, tags: out };
+}
+
 export { serializeTodoBody };
 
 export const ARCHETYPES = [
@@ -37,6 +61,12 @@ export interface OfferFormState {
   todoDate: string;
   sourceUrl: string;
   capturedNow: boolean;
+  /** #805 additive: カンマ区切り tags / color_tag('' = omit)。 */
+  tags: string;
+  colorTag: string;
+  /** SR-14 先行(host 実装中): mime_type / filename('' = omit)。 */
+  mimeType: string;
+  filename: string;
   /** v1.1 capture-profile optional fields (all '' = omit). */
   kind: string;
   thumbnailUrl: string;
@@ -55,6 +85,10 @@ export function emptyOfferForm(): OfferFormState {
     todoDate: '',
     sourceUrl: '',
     capturedNow: false,
+    tags: '',
+    colorTag: '',
+    mimeType: '',
+    filename: '',
     kind: '',
     thumbnailUrl: '',
     provider: '',
@@ -95,6 +129,18 @@ export function buildOfferPayload(f: OfferFormState, nowIso: () => string): Offe
   if (f.archetype !== '') payload['archetype'] = f.archetype;
   if (f.sourceUrl.trim() !== '') payload['source_url'] = f.sourceUrl.trim();
   if (f.capturedNow) payload['captured_at'] = nowIso();
+
+  // #805 additive: tags / color_tag(host 上限をミラーし、reject される
+  // payload を送らない)。
+  if (f.tags.trim() !== '') {
+    const r = parseTagsInput(f.tags);
+    if (!r.ok) return { ok: false, error: r.error };
+    if (r.tags.length > 0) payload['tags'] = r.tags;
+  }
+  if (f.colorTag.trim() !== '') payload['color_tag'] = f.colorTag.trim();
+  // SR-14 先行(mime_type / filename — 現行 host は無視、実装着地で有効化)。
+  if (f.mimeType.trim() !== '') payload['mime_type'] = f.mimeType.trim();
+  if (f.filename.trim() !== '') payload['filename'] = f.filename.trim();
 
   // v1.1 additive fields — only included when present (old hosts ignore them).
   if (f.kind.trim() !== '') payload['kind'] = f.kind.trim();
