@@ -1,0 +1,15 @@
+/* F4 pptx-viewer — layout on top of shared/base.css. */
+
+.pkc-pptx-root { max-width: 860px; margin: 0 auto; padding: 12px; display: flex; flex-direction: column; gap: 10px; }
+.pkc-pptx-header { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+.pkc-pptx-title { font-weight: 600; font-size: 15px; }
+.pkc-pptx-indexrow { display: flex; gap: 8px; align-items: baseline; margin: 2px 0; }
+.pkc-pptx-indextitle { flex: 1 1 auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pkc-pptx-deck { max-height: 70vh; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
+.pkc-pptx-slide {
+  border: 1px solid var(--c-border); border-radius: 4px;
+  background: var(--c-surface-2); padding: 10px 12px;
+}
+.pkc-pptx-slideno { color: var(--c-fg-dim); font-size: 11px; margin-bottom: 4px; }
+.pkc-pptx-slidetitle { font-weight: 700; font-size: 15px; margin-bottom: 6px; border-bottom: 1px solid var(--c-border); padding-bottom: 4px; }
+.pkc-pptx-line { margin: 3px 0 3px 8px; white-space: pre-wrap; word-break: break-word; line-height: 1.6; }
