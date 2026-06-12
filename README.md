@@ -36,6 +36,7 @@ PKC2 の **PKC-Message** プロトコル (`pkc-message` v1) を使う **単一 H
 | E5 gratitude-journal | #56 | `dist/pkc2-gratitude-journal.html` | 今日の感謝 3 つ → textlog offer |
 | E6 weekly-review | #57 | `dist/pkc2-weekly-review.html` | ISO 週番号タイトルの KPT レビュー → text offer |
 | E7 learning-cards | #58 | `dist/pkc2-learning-cards.html` | フラッシュカード作成・学習・デッキの text offer(往復書式) |
+| F2 email-viewer | #60 | `dist/pkc2-email-viewer.html` | .eml を依存ゼロ MIME パーサで整形表示(本文/全ヘッダ/添付保存)。HTML メールは inert テキスト抽出。standalone + T1 受動受信 |
 | F6 pdf-viewer | #64 | `dist/pkc2-pdf-viewer.html` | pdf.js 同梱のオフライン PDF ビューア。standalone(ファイル/ドラッグ&ドロップ)+ T1 受動受信(projection 索引 → 送付ジェスチャで表示、PKC2#806)~1.6MB |
 | F7 mermaid-editor | #65 | `dist/pkc2-mermaid-editor.html` | Mermaid ライブ編集(テンプレ・テーマ・SVG/PNG 保存)。ソースを ```mermaid fence の text entry として offer(mermaid 同梱 ~3MB・オフライン) |
 

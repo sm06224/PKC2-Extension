@@ -28,9 +28,10 @@
     "build:e5": "vite build -c tools/e5-gratitude-journal/vite.config.ts && node build/singlefile.mjs e5-gratitude-journal",
     "build:e6": "vite build -c tools/e6-weekly-review/vite.config.ts && node build/singlefile.mjs e6-weekly-review",
     "build:e7": "vite build -c tools/e7-learning-cards/vite.config.ts && node build/singlefile.mjs e7-learning-cards",
+    "build:f2": "vite build -c tools/f2-email-viewer/vite.config.ts && node build/singlefile.mjs f2-email-viewer",
     "build:f6": "vite build -c tools/f6-pdf-viewer/vite.config.ts && node build/singlefile.mjs f6-pdf-viewer",
     "build:f7": "vite build -c tools/f7-mermaid-editor/vite.config.ts && node build/singlefile.mjs f7-mermaid-editor",
-    "build": "npm run build:a1 && npm run build:a2 && npm run build:a3 && npm run build:a4 && npm run build:a5 && npm run build:b1 && npm run build:b2 && npm run build:b3 && npm run build:b6 && npm run build:b7 && npm run build:b8 && npm run build:b13 && npm run build:b14 && npm run build:b15 && npm run build:c1 && npm run build:e1 && npm run build:e2 && npm run build:e3 && npm run build:e4 && npm run build:e5 && npm run build:e6 && npm run build:e7 && npm run build:f6 && npm run build:f7",
+    "build": "npm run build:a1 && npm run build:a2 && npm run build:a3 && npm run build:a4 && npm run build:a5 && npm run build:b1 && npm run build:b2 && npm run build:b3 && npm run build:b6 && npm run build:b7 && npm run build:b8 && npm run build:b13 && npm run build:b14 && npm run build:b15 && npm run build:c1 && npm run build:e1 && npm run build:e2 && npm run build:e3 && npm run build:e4 && npm run build:e5 && npm run build:e6 && npm run build:e7 && npm run build:f2 && npm run build:f6 && npm run build:f7",
     "test": "vitest run",
     "typecheck": "tsc --noEmit"
   },
