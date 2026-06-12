@@ -21,6 +21,7 @@
     "build:b14": "vite build -c tools/b14-daily-log-starter/vite.config.ts && node build/singlefile.mjs b14-daily-log-starter",
     "build:b15": "vite build -c tools/b15-form-template/vite.config.ts && node build/singlefile.mjs b15-form-template",
     "build:c1": "vite build -c tools/c1-export-downloader/vite.config.ts && node build/singlefile.mjs c1-export-downloader",
+    "build:d1": "vite build -c tools/d1-multi-broadcaster/vite.config.ts && node build/singlefile.mjs d1-multi-broadcaster",
     "build:e1": "vite build -c tools/e1-reading-list/vite.config.ts && node build/singlefile.mjs e1-reading-list",
     "build:e2": "vite build -c tools/e2-expense-tracker/vite.config.ts && node build/singlefile.mjs e2-expense-tracker",
     "build:e3": "vite build -c tools/e3-habit-tracker/vite.config.ts && node build/singlefile.mjs e3-habit-tracker",
@@ -38,7 +39,7 @@
     "build:f8": "vite build -c tools/f8-drawio-editor/vite.config.ts && node build/singlefile.mjs f8-drawio-editor",
     "build:f9": "vite build -c tools/f9-md-note/vite.config.ts && node build/singlefile.mjs f9-md-note",
     "build:f10": "vite build -c tools/f10-canvas-sketcher/vite.config.ts && node build/singlefile.mjs f10-canvas-sketcher",
-    "build": "npm run build:a1 && npm run build:a2 && npm run build:a3 && npm run build:a4 && npm run build:a5 && npm run build:b1 && npm run build:b2 && npm run build:b3 && npm run build:b6 && npm run build:b7 && npm run build:b8 && npm run build:b13 && npm run build:b14 && npm run build:b15 && npm run build:c1 && npm run build:e1 && npm run build:e2 && npm run build:e3 && npm run build:e4 && npm run build:e5 && npm run build:e6 && npm run build:e7 && npm run build:f1 && npm run build:f2 && npm run build:f3 && npm run build:f4 && npm run build:f5 && npm run build:f6 && npm run build:f7 && npm run build:f8 && npm run build:f9 && npm run build:f10",
+    "build": "npm run build:a1 && npm run build:a2 && npm run build:a3 && npm run build:a4 && npm run build:a5 && npm run build:b1 && npm run build:b2 && npm run build:b3 && npm run build:b6 && npm run build:b7 && npm run build:b8 && npm run build:b13 && npm run build:b14 && npm run build:b15 && npm run build:c1 && npm run build:d1 && npm run build:e1 && npm run build:e2 && npm run build:e3 && npm run build:e4 && npm run build:e5 && npm run build:e6 && npm run build:e7 && npm run build:f1 && npm run build:f2 && npm run build:f3 && npm run build:f4 && npm run build:f5 && npm run build:f6 && npm run build:f7 && npm run build:f8 && npm run build:f9 && npm run build:f10",
     "test": "vitest run",
     "typecheck": "tsc --noEmit"
   },

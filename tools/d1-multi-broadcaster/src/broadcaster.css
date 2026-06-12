@@ -1,0 +1,15 @@
+/* D1 multi-broadcaster — layout on top of shared/base.css. */
+
+.pkc-d1-root { max-width: 1100px; margin: 0 auto; padding: 12px; display: flex; flex-direction: column; gap: 10px; }
+.pkc-d1-header { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+.pkc-d1-title { font-weight: 600; font-size: 15px; }
+.pkc-d1-root textarea { width: 100%; box-sizing: border-box; margin-top: 6px; }
+.pkc-d1-root input[type="text"], .pkc-d1-root select { width: 100%; margin-top: 6px; }
+.pkc-d1-slots { display: flex; flex-direction: column; gap: 10px; }
+.pkc-d1-slot {
+  border: 1px solid var(--c-border); border-radius: 4px;
+  background: var(--c-surface); padding: 8px 10px;
+  display: flex; flex-direction: column; gap: 6px;
+}
+.pkc-d1-slothead { display: flex; align-items: baseline; gap: 8px; justify-content: space-between; }
+.pkc-d1-result { margin: 1px 0; }
