@@ -63,6 +63,9 @@ export function lintEnvelope(raw: string): Finding[] {
   if (typeof d['timestamp'] === 'string' && Number.isNaN(new Date(d['timestamp']).getTime())) {
     findings.push({ level: 'warn', text: 'timestamp が ISO 8601 として解釈できません' });
   }
+  if (typeof d['type'] === 'string' && d['type'].startsWith('pkc:')) {
+    findings.push({ level: 'info', text: 'host-push 体系(projection / deliver / write)は PKC-Message envelope ではなく別チャネル pkc-ext v1 です(PKC2#816)— envelope として送っても host は INVALID_TYPE で捨てます' });
+  }
   if ('correlation_id' in d) {
     if (typeof d['correlation_id'] === 'string') {
       findings.push({ level: 'info', text: 'correlation_id あり(v1.x additive、PKC2#804)— 対応 host は ack/reject/accept に echo、旧 host は無視' });
@@ -111,7 +114,7 @@ export function lintEnvelope(raw: string): Finding[] {
       }
       for (const f14 of ['mime_type', 'filename'] as const) {
         if (f14 in p && typeof p[f14] !== 'string') {
-          findings.push({ level: 'warn', text: `${f14} は string を推奨(SR-14 — host 実装中)` });
+          findings.push({ level: 'warn', text: `${f14} は string を推奨(SR-14、PKC2#814)` });
         }
       }
       break;
@@ -128,16 +131,6 @@ export function lintEnvelope(raw: string): Finding[] {
     case 'record:ack':
     case 'record:reject': {
       findings.push({ level: 'info', text: `${String(d['type'])} は host → sender 方向の type です(sender から送るものではありません)` });
-      break;
-    }
-    case 'pkc:projection':
-    case 'pkc:deliver':
-    case 'pkc:write-result': {
-      findings.push({ level: 'info', text: `${String(d['type'])} は host → 拡張方向の type(host-push 体系、PKC2#806 rev.2)。schema は host 実装 PR で normative 化予定` });
-      break;
-    }
-    case 'pkc:write': {
-      findings.push({ level: 'info', text: 'pkc:write は T2(io権)拡張 → host 方向。host が全 op を検証してから適用(PKC2#806 rev.2、schema は実装 PR で確定)' });
       break;
     }
     case 'record:accept': {

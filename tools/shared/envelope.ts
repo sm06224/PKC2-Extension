@@ -28,14 +28,10 @@ export const KNOWN_TYPES = [
   'export:result',
   'navigate',
   'custom',
-  // host-push 体系(PKC2#806 rev.2 通達、2026-06-12)。schema は host 実装
-  // PR で normative 化される予定 — type 名のみ先行登録(届いたものを
-  // INVALID_TYPE にしないため)。
-  'pkc:projection',
-  'pkc:deliver',
-  'pkc:write',
-  'pkc:write-result',
 ] as const;
+// 注: host-push 体系(PKC2#806 rev.2)は PKC-Message envelope ではなく
+// **別チャネル `pkc-ext` v1**(PKC2#816 で確定)。子側実装は
+// `./ext-channel.ts`。envelope KNOWN_TYPES には追加しない。
 export type MessageType = (typeof KNOWN_TYPES)[number];
 
 export interface Envelope {

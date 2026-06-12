@@ -138,7 +138,7 @@ export function buildOfferPayload(f: OfferFormState, nowIso: () => string): Offe
     if (r.tags.length > 0) payload['tags'] = r.tags;
   }
   if (f.colorTag.trim() !== '') payload['color_tag'] = f.colorTag.trim();
-  // SR-14 先行(mime_type / filename — 現行 host は無視、実装着地で有効化)。
+  // SR-14(mime_type / filename — PKC2#814 で host 着地済み)。
   if (f.mimeType.trim() !== '') payload['mime_type'] = f.mimeType.trim();
   if (f.filename.trim() !== '') payload['filename'] = f.filename.trim();
 
