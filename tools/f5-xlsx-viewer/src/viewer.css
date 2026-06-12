@@ -1,0 +1,19 @@
+/* F5 xlsx-viewer — layout on top of shared/base.css. */
+
+.pkc-xlsx-root { max-width: 1100px; margin: 0 auto; padding: 12px; display: flex; flex-direction: column; gap: 10px; }
+.pkc-xlsx-header { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+.pkc-xlsx-title { font-weight: 600; font-size: 15px; }
+.pkc-xlsx-indexrow { display: flex; gap: 8px; align-items: baseline; margin: 2px 0; }
+.pkc-xlsx-indextitle { flex: 1 1 auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pkc-xlsx-tabs { display: flex; gap: 4px; flex-wrap: wrap; margin: 6px 0; }
+.pkc-xlsx-tab-active { border-color: var(--c-accent); background: #1a2413; }
+.pkc-xlsx-gridbox { overflow: auto; max-height: 65vh; border: 1px solid var(--c-border); border-radius: 4px; }
+.pkc-xlsx-table { border-collapse: collapse; font-size: 12px; }
+.pkc-xlsx-table th, .pkc-xlsx-table td {
+  border: 1px solid var(--c-border); padding: 2px 6px;
+  max-width: 320px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.pkc-xlsx-table td { font-family: ui-monospace, monospace; }
+.pkc-xlsx-table thead th { position: sticky; top: 0; background: var(--c-surface-2); color: var(--c-fg-dim); z-index: 1; }
+.pkc-xlsx-rowhead { background: var(--c-surface-2); color: var(--c-fg-dim); text-align: right; position: sticky; left: 0; }
+.pkc-xlsx-corner { position: sticky; left: 0; z-index: 2; }
