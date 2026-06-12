@@ -11,12 +11,16 @@
  *   host → ext   { pkc, v, nonce, t:'write-result', ok, correlation_id }
  *   ext  → host  { pkc, v, nonce, t:'hint', kind, lid? }              (軽量ヒント、pull ではない)
  *
- * Security (graph と同じ primitive — PKC2#796 の opaque 移行を生存):
- *  - host は最初の有効メッセージで判明する window(opener/parent)に固定し、
- *    `event.source` の同一性で検証(偽造不能)
- *  - origin は `location.origin` 一致(file:// 等の opaque は両者 'null' で一致)
- *  - nonce は最初の有効な host メッセージから pin し、以後の受信で必須・
- *    送信(write/hint)に同梱
+ * Security — 公式 graph 拡張(PKC2#823)と同じ TOFU gate:
+ *  - **Tier S(sandbox 既定、PKC2#821)では host push の `ev.source` が
+ *    parent と一致しない**(拡張は popup shell 内の sandboxed iframe で、
+ *    push は host main window から直接届く)。そのため受信は
+ *    「最初の有効な projection で source + nonce を pin」(TOFU)とし、
+ *    以後は pin した source 同一性 + nonce 一致で検証する
+ *  - origin は自分が非 opaque(Tier T same-origin popup)の場合のみ厳格比較。
+ *    Tier S では自 origin が 'null'(opaque)になり比較が成立しない
+ *  - 送信先は opener(Tier T)/ parent(Tier S の shell)。targetOrigin は
+ *    自 origin が非 opaque ならそれに pin、opaque なら '*'
  *  - 受信 payload は型ガードで防御的にパース。描画は呼び出し側の責務
  *    (textContent 規律)
  */
@@ -123,12 +127,15 @@ export interface ExtChannelCallbacks {
  * `attach()` / `handleMessage()` はテストおよび特殊トポロジ用に公開。
  */
 export class ExtChannel {
-  private host: Window | null = null;
+  /** 送信先(Tier T = opener / Tier S = shell parent)。 */
+  private target: Window | null = null;
+  /** TOFU で pin した host window(ev.source。Tier S では target と別)。 */
+  private hostSource: unknown = null;
   private nonce: string | null = null;
 
   constructor(private readonly cb: ExtChannelCallbacks) {}
 
-  /** opener / parent をホストとして handshake を開始。 */
+  /** opener / parent へ handshake を開始。 */
   start(): boolean {
     let opener: Window | null = null;
     try {
@@ -136,18 +143,18 @@ export class ExtChannel {
     } catch {
       opener = null;
     }
-    const host = opener ?? (window.parent !== window ? window.parent : null);
-    if (!host) return false;
-    this.attach(host);
+    const target = opener ?? (window.parent !== window ? window.parent : null);
+    if (!target) return false;
+    this.attach(target);
     return true;
   }
 
-  /** ホスト window を固定し hello を送る(テストからも使用)。 */
-  attach(host: Window): void {
-    this.host = host;
+  /** 送信先 window を固定し hello を送る(テストからも使用)。 */
+  attach(target: Window): void {
+    this.target = target;
     window.addEventListener('message', (ev) => this.handleMessage(ev));
     try {
-      host.postMessage({ pkc: PKC_EXT, v: PKC_EXT_V, t: 'hello' }, targetOrigin());
+      target.postMessage({ pkc: PKC_EXT, v: PKC_EXT_V, t: 'hello' }, targetOrigin());
     } catch {
       /* host torn down */
     }
@@ -173,9 +180,9 @@ export class ExtChannel {
   }
 
   private post(msg: Record<string, unknown>): boolean {
-    if (!this.host || this.nonce === null) return false;
+    if (!this.target || this.nonce === null) return false;
     try {
-      this.host.postMessage({ pkc: PKC_EXT, v: PKC_EXT_V, nonce: this.nonce, ...msg }, targetOrigin());
+      this.target.postMessage({ pkc: PKC_EXT, v: PKC_EXT_V, nonce: this.nonce, ...msg }, targetOrigin());
       return true;
     } catch {
       return false;
@@ -184,18 +191,25 @@ export class ExtChannel {
 
   /** 受信処理(テストから ev 風オブジェクトで直接呼べる)。 */
   handleMessage(ev: Pick<MessageEvent, 'data' | 'origin' | 'source'>): void {
-    // identity + origin(opaque 同士は 'null' === 'null' で一致)
-    if (ev.source !== this.host) return;
-    if (ev.origin !== window.location.origin && !(ev.origin === 'null' && window.location.origin === 'null')) return;
     const d = ev.data as Record<string, unknown> | null;
     if (!d || d['pkc'] !== PKC_EXT || d['v'] !== PKC_EXT_V) return;
     if (typeof d['nonce'] !== 'string') return;
+    // origin: 自分が非 opaque(Tier T same-origin)の場合のみ厳格比較できる
+    const own = window.location.origin;
+    if (own && own !== 'null' && ev.origin !== own) return;
     if (this.nonce === null) {
-      // 最初の有効な host メッセージで nonce を pin(host は全送信に同梱)
+      // TOFU: 最初の有効な **projection** で host(source)+ nonce を pin。
+      // Tier S では push の ev.source が parent と一致しないため(PKC2#821)、
+      // 公式 graph 拡張(PKC2#823)と同じく最初の projection を信頼の起点にする。
+      if (d['t'] !== 'projection') return;
+      const p = parseProjection(d['projection']);
+      if (!p) return;
+      this.hostSource = ev.source;
       this.nonce = d['nonce'];
-    } else if (d['nonce'] !== this.nonce) {
+      this.cb.onProjection?.(p);
       return;
     }
+    if (ev.source !== this.hostSource || d['nonce'] !== this.nonce) return;
     if (d['t'] === 'projection') {
       const p = parseProjection(d['projection']);
       if (p) this.cb.onProjection?.(p);

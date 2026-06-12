@@ -50,7 +50,7 @@ beforeEach(() => {
   ch.attach(hostWin);
 });
 
-describe('handshake + nonce pinning', () => {
+describe('handshake + TOFU pinning(PKC2#821/#823 追従)', () => {
   it('attach sends hello (no nonce yet)', () => {
     const hello = sentToHost[0] as Record<string, unknown>;
     expect(hello['pkc']).toBe('pkc-ext');
@@ -59,7 +59,7 @@ describe('handshake + nonce pinning', () => {
     expect(ch.isEstablished()).toBe(false);
   });
 
-  it('pins the nonce from the first valid host message and rejects others after', () => {
+  it('pins source + nonce from the first valid projection and rejects other nonces after', () => {
     ch.handleMessage(fromHost({ nonce: 'n-1', t: 'projection', projection: PROJECTION }));
     expect(ch.isEstablished()).toBe(true);
     expect(received.projections.length).toBe(1);
@@ -68,13 +68,48 @@ describe('handshake + nonce pinning', () => {
     expect(received.delivers.length).toBe(0);
   });
 
-  it('ignores messages from a non-host window even with the right shape', () => {
+  it('pin 前の deliver / write-result は無視(pin は projection のみ)', () => {
+    ch.handleMessage(fromHost({ nonce: 'n-1', t: 'deliver', payload: { kind: 'entry', lid: 'x', body: 'b' } }));
+    ch.handleMessage(fromHost({ nonce: 'n-1', t: 'write-result', ok: true }));
+    expect(ch.isEstablished()).toBe(false);
+    expect(received.delivers.length).toBe(0);
+    expect(received.writeResults.length).toBe(0);
+  });
+
+  it('Tier S: 送信先(parent/shell)と異なる source からの push を TOFU で受理する', () => {
+    // attach 先 = hostWin(shell 相当)だが、push は別 window(host main)から届く
+    const hostMain = { postMessage: (): void => undefined } as unknown as Window;
+    ch.handleMessage({
+      data: { pkc: 'pkc-ext', v: 1, nonce: 'n-S', t: 'projection', projection: PROJECTION },
+      origin: window.location.origin,
+      source: hostMain as unknown as MessageEventSource,
+    });
+    expect(ch.isEstablished()).toBe(true);
+    expect(received.projections.length).toBe(1);
+    // pin 後は正しい nonce でも別 window を拒否
+    ch.handleMessage({
+      data: { pkc: 'pkc-ext', v: 1, nonce: 'n-S', t: 'deliver', payload: { kind: 'entry', lid: 'x', body: 'b' } },
+      origin: window.location.origin,
+      source: stranger as unknown as MessageEventSource,
+    });
+    expect(received.delivers.length).toBe(0);
+    // pin した window からは通る
+    ch.handleMessage({
+      data: { pkc: 'pkc-ext', v: 1, nonce: 'n-S', t: 'deliver', payload: { kind: 'entry', lid: 'x', body: 'b' } },
+      origin: window.location.origin,
+      source: hostMain as unknown as MessageEventSource,
+    });
+    expect(received.delivers.length).toBe(1);
+  });
+
+  it('pin 後は正しい nonce でも別 window からのメッセージを拒否する', () => {
+    ch.handleMessage(fromHost({ nonce: 'n-1', t: 'projection', projection: PROJECTION }));
     ch.handleMessage({
       data: { pkc: 'pkc-ext', v: 1, nonce: 'n-1', t: 'projection', projection: PROJECTION },
       origin: window.location.origin,
       source: stranger as unknown as MessageEventSource,
     });
-    expect(received.projections.length).toBe(0);
+    expect(received.projections.length).toBe(1);
   });
 });
 
