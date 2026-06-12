@@ -1,0 +1,14 @@
+/* B9 rss-fetcher — layout on top of shared/base.css. */
+
+.pkc-b9-root { max-width: 860px; margin: 0 auto; padding: 12px; display: flex; flex-direction: column; gap: 10px; }
+.pkc-b9-header { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+.pkc-b9-title { font-weight: 600; font-size: 15px; }
+.pkc-b9-root textarea { width: 100%; box-sizing: border-box; margin-bottom: 6px; }
+.pkc-b9-item {
+  display: flex; gap: 8px; align-items: flex-start; margin: 4px 0; padding: 6px 8px;
+  border: 1px solid var(--c-border); border-radius: 4px; background: var(--c-surface-2); cursor: pointer;
+}
+.pkc-b9-item input[type="checkbox"] { margin-top: 3px; flex: 0 0 auto; }
+.pkc-b9-itemmeta { flex: 1 1 auto; min-width: 0; }
+.pkc-b9-itemtitle { font-weight: 600; }
+.pkc-b9-itemsummary { color: var(--c-fg-dim); font-size: 12px; margin-top: 2px; }

@@ -1,0 +1,7 @@
+/* B4 web-clipper — layout on top of shared/base.css. */
+
+.pkc-b4-root { max-width: 760px; margin: 0 auto; padding: 12px; display: flex; flex-direction: column; gap: 10px; }
+.pkc-b4-header { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+.pkc-b4-title { font-weight: 600; font-size: 15px; }
+.pkc-b4-root input[type="text"] { width: 100%; margin-top: 6px; }
+.pkc-b4-root textarea { width: 100%; box-sizing: border-box; margin-top: 6px; }
