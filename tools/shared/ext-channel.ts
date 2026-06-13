@@ -120,6 +120,8 @@ export interface ExtChannelCallbacks {
   onProjection?: (p: ContainerProjection) => void;
   onDeliver?: (d: DeliverPayload) => void;
   onWriteResult?: (ok: boolean, correlationId: string | null) => void;
+  /** host 側の選択変更(`t:'selected'`、graph/filer が focus を追従)。 */
+  onSelected?: (lid: string) => void;
 }
 
 /**
@@ -218,6 +220,8 @@ export class ExtChannel {
       if (payload) this.cb.onDeliver?.(payload);
     } else if (d['t'] === 'write-result') {
       this.cb.onWriteResult?.(d['ok'] === true, typeof d['correlation_id'] === 'string' ? d['correlation_id'] : null);
+    } else if (d['t'] === 'selected') {
+      if (typeof d['lid'] === 'string') this.cb.onSelected?.(d['lid']);
     }
   }
 }

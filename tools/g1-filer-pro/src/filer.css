@@ -1,0 +1,55 @@
+/* G1 filer-pro — layout on top of shared/base.css. */
+
+.pkc-filer-root {
+  max-width: 1200px; margin: 0 auto; padding: 12px; box-sizing: border-box;
+  height: 100vh; display: flex; flex-direction: column; gap: 8px;
+}
+.pkc-filer-header { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; flex: 0 0 auto; }
+.pkc-filer-title { font-weight: 600; font-size: 15px; }
+.pkc-filer-toolbar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; flex: 0 0 auto; }
+.pkc-filer-toolbar input[type="text"] { flex: 1 1 200px; }
+.pkc-filer-toolbar select { flex: 0 0 auto; width: auto; }
+
+.pkc-filer-crumbs { display: flex; gap: 4px; align-items: center; flex-wrap: wrap; flex: 0 0 auto; font-size: 12px; }
+.pkc-filer-crumb { background: none; border: none; color: var(--c-fg-dim); cursor: pointer; font: inherit; padding: 1px 4px; border-radius: 3px; }
+.pkc-filer-crumb:hover { color: var(--c-accent); background: var(--c-surface-2); }
+.pkc-filer-crumbsep { color: var(--c-fg-dim); }
+
+.pkc-filer-split { flex: 1 1 auto; min-height: 0; display: flex; gap: 10px; }
+
+/* ---- tree(紙) */
+.pkc-filer-tree { flex: 0 0 280px; overflow: auto; padding: 6px; font-size: 13px; }
+.pkc-filer-folderrow {
+  display: flex; align-items: center; gap: 4px; padding: 2px 4px; border-radius: 3px;
+  cursor: pointer; white-space: nowrap; color: var(--paper-fg);
+}
+.pkc-filer-folderrow:hover { background: var(--paper-bg-2); }
+.pkc-filer-active { background: #dfe8cf; }
+.pkc-filer-droptarget { outline: 2px dashed #6c8ebf; outline-offset: -2px; background: #e3ecf7; }
+.pkc-filer-twisty { width: 12px; flex: 0 0 auto; color: var(--paper-dim); text-align: center; }
+.pkc-filer-foldericon { flex: 0 0 auto; }
+.pkc-filer-foldername { flex: 1 1 auto; overflow: hidden; text-overflow: ellipsis; }
+.pkc-filer-foldercount { flex: 0 0 auto; color: var(--paper-dim); font-size: 11px; }
+
+/* ---- list(紙) */
+.pkc-filer-list { flex: 1 1 auto; overflow: auto; padding: 6px 8px; font-size: 13px; }
+.pkc-filer-listhead { color: var(--paper-dim); font-size: 11px; margin-bottom: 4px; }
+.pkc-filer-entryrow {
+  display: flex; align-items: center; gap: 6px; padding: 3px 6px; border-radius: 3px;
+  color: var(--paper-fg); border: 1px solid transparent;
+}
+.pkc-filer-entryrow:hover { background: var(--paper-bg-2); }
+.pkc-filer-selected { background: #dfe8cf; border-color: #9bb36b; }
+.pkc-filer-relatefrom { outline: 1px dashed #82b366; }
+.pkc-filer-entryicon { flex: 0 0 auto; }
+.pkc-filer-entryname { flex: 1 1 auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; cursor: pointer; }
+.pkc-filer-entryname:hover { text-decoration: underline; }
+.pkc-filer-entrymeta { flex: 0 0 auto; color: var(--paper-dim); font-size: 11px; white-space: nowrap; }
+.pkc-filer-colordot { width: 9px; height: 9px; border-radius: 50%; flex: 0 0 auto; border: 1px solid #00000022; }
+.pkc-filer-tag { flex: 0 0 auto; font-size: 10.5px; background: #e6e0cf; color: #4a5240; border-radius: 8px; padding: 0 6px; }
+.pkc-filer-entryrow .pkc-btn-small { padding: 0 6px; border-color: #cfc8b6; background: #efe9da; color: #4a5240; }
+
+@media (max-width: 820px) {
+  .pkc-filer-split { flex-direction: column; }
+  .pkc-filer-tree { flex: 0 0 160px; }
+}
