@@ -10,7 +10,7 @@ import '../../shared/base.css';
 import './viewer.css';
 import { ExtChannel, type ContainerProjection, type DeliverPayload, type ProjectionEntry } from '../../shared/ext-channel';
 import { helpButton } from '../../shared/help';
-import { button, el } from '../../shared/ui';
+import { button, el, foldSection, type FoldSection } from '../../shared/ui';
 import { parsePptx, type PptxSlide } from './pptx';
 
 const TOOL_NAME = 'pkc2-pptx-viewer';
@@ -49,6 +49,7 @@ let channel: ExtChannel | null = null;
 let indexEl: HTMLElement | null = null;
 let deckEl: HTMLElement | null = null;
 let statusEl: HTMLElement | null = null;
+let menuFold: FoldSection | null = null;
 
 function setStatus(text: string): void {
   if (statusEl) statusEl.textContent = text;
@@ -75,6 +76,7 @@ function loadBytes(bytes: Uint8Array, label: string): void {
     deckEl.replaceChildren();
     deckEl.appendChild(el('div', 'pkc-panel-heading', `📊 ${label}(${slides.length} スライド)`));
     deckEl.appendChild(renderSlides(slides));
+    menuFold?.collapse();
     setStatus(`${label} を表示中`);
   });
 }
@@ -155,7 +157,6 @@ export function mountPptxViewer(root: HTMLElement): { channel: ExtChannel } {
   indexEl.appendChild(
     el('div', 'pkc-hint', connected ? 'PKC2 に接続しました — projection 待機中…' : 'standalone 起動(PKC2 から起動すると添付の索引が出ます)'),
   );
-  root.appendChild(indexEl);
 
   const open = el('div', 'pkc-panel');
   open.setAttribute('data-pkc-region', 'pptx-open');
@@ -169,10 +170,16 @@ export function mountPptxViewer(root: HTMLElement): { channel: ExtChannel } {
     void f.arrayBuffer().then((buf) => loadBytes(new Uint8Array(buf), f.name));
   });
   open.appendChild(file);
-  statusEl = el('div', 'pkc-hint');
+
+  const menu = el('div', 'pkc-fold-stack');
+  menu.appendChild(indexEl);
+  menu.appendChild(open);
+  menuFold = foldSection('📂 メニュー — PKC2 索引 / ファイルを開く', menu);
+  root.appendChild(menuFold.el);
+
+  statusEl = el('div', 'pkc-statusbar');
   statusEl.setAttribute('data-pkc-region', 'pptx-status');
-  open.appendChild(statusEl);
-  root.appendChild(open);
+  root.appendChild(statusEl);
 
   root.addEventListener('dragover', (ev) => ev.preventDefault());
   root.addEventListener('drop', (ev) => {
@@ -181,7 +188,7 @@ export function mountPptxViewer(root: HTMLElement): { channel: ExtChannel } {
     if (f) void f.arrayBuffer().then((buf) => loadBytes(new Uint8Array(buf), f.name));
   });
 
-  deckEl = el('div', 'pkc-panel pkc-pptx-view');
+  deckEl = el('div', 'pkc-pptx-view');
   deckEl.setAttribute('data-pkc-region', 'pptx-view');
   deckEl.appendChild(el('div', 'pkc-hint', '.pptx を開くとここに表示されます'));
   root.appendChild(deckEl);

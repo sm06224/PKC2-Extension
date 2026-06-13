@@ -73,7 +73,8 @@ function downloadBlob(content: Blob, filename: string): void {
 export function mountMermaidEditor(root: HTMLElement): { conn: HostConnection } {
   root.replaceChildren();
   root.className = 'pkc-mmd-root';
-  initMermaid('dark');
+  // プレビューは紙背景のため明テーマを既定に(実機フィードバック 2026-06-13)
+  initMermaid('default');
 
   const header = el('div', 'pkc-mmd-header');
   header.setAttribute('data-pkc-region', 'mmd-header');
@@ -121,10 +122,10 @@ export function mountMermaidEditor(root: HTMLElement): { conn: HostConnection } 
     );
   }
   const theme = selectInput([
-    { value: 'dark', label: 'theme: dark' },
     { value: 'default', label: 'theme: default' },
     { value: 'forest', label: 'theme: forest' },
     { value: 'neutral', label: 'theme: neutral' },
+    { value: 'dark', label: 'theme: dark' },
   ]);
   theme.classList.add('pkc-mmd-theme');
   theme.addEventListener('change', () => {

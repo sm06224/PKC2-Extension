@@ -11,7 +11,7 @@ import '../../shared/base.css';
 import './viewer.css';
 import { ExtChannel, type ContainerProjection, type DeliverPayload, type ProjectionEntry } from '../../shared/ext-channel';
 import { helpButton } from '../../shared/help';
-import { button, el } from '../../shared/ui';
+import { button, el, foldSection, type FoldSection } from '../../shared/ui';
 import { charCount, parseDocx, type DocxBlock } from './docx';
 
 const TOOL_NAME = 'pkc2-docx-viewer';
@@ -61,6 +61,7 @@ let channel: ExtChannel | null = null;
 let indexEl: HTMLElement | null = null;
 let docEl: HTMLElement | null = null;
 let statusEl: HTMLElement | null = null;
+let menuFold: FoldSection | null = null;
 
 function setStatus(text: string): void {
   if (statusEl) statusEl.textContent = text;
@@ -87,6 +88,7 @@ function loadBytes(bytes: Uint8Array, label: string): void {
     docEl.replaceChildren();
     docEl.appendChild(el('div', 'pkc-panel-heading', `📃 ${label}(${blocks.length} ブロック / 約 ${charCount(blocks)} 字)`));
     docEl.appendChild(renderBlocks(blocks));
+    menuFold?.collapse();
     setStatus(`${label} を表示中`);
   });
 }
@@ -168,7 +170,6 @@ export function mountDocxViewer(root: HTMLElement): { channel: ExtChannel } {
   indexEl.appendChild(
     el('div', 'pkc-hint', connected ? 'PKC2 に接続しました — projection 待機中…' : 'standalone 起動(PKC2 から起動すると添付の索引が出ます)'),
   );
-  root.appendChild(indexEl);
 
   const open = el('div', 'pkc-panel');
   open.setAttribute('data-pkc-region', 'docx-open');
@@ -182,10 +183,16 @@ export function mountDocxViewer(root: HTMLElement): { channel: ExtChannel } {
     void f.arrayBuffer().then((buf) => loadBytes(new Uint8Array(buf), f.name));
   });
   open.appendChild(file);
-  statusEl = el('div', 'pkc-hint');
+
+  const menu = el('div', 'pkc-fold-stack');
+  menu.appendChild(indexEl);
+  menu.appendChild(open);
+  menuFold = foldSection('📂 メニュー — PKC2 索引 / ファイルを開く', menu);
+  root.appendChild(menuFold.el);
+
+  statusEl = el('div', 'pkc-statusbar');
   statusEl.setAttribute('data-pkc-region', 'docx-status');
-  open.appendChild(statusEl);
-  root.appendChild(open);
+  root.appendChild(statusEl);
 
   root.addEventListener('dragover', (ev) => ev.preventDefault());
   root.addEventListener('drop', (ev) => {
@@ -194,7 +201,7 @@ export function mountDocxViewer(root: HTMLElement): { channel: ExtChannel } {
     if (f) void f.arrayBuffer().then((buf) => loadBytes(new Uint8Array(buf), f.name));
   });
 
-  docEl = el('div', 'pkc-panel pkc-docx-view');
+  docEl = el('div', 'pkc-paper pkc-docx-view');
   docEl.setAttribute('data-pkc-region', 'docx-view');
   docEl.appendChild(el('div', 'pkc-hint', '.docx を開くとここに表示されます'));
   root.appendChild(docEl);

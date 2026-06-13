@@ -13,8 +13,10 @@
   font-family: ui-monospace, monospace; font-size: 12px; line-height: 1.5;
 }
 .pkc-drawio-preview {
-  flex: 1 1 50%; border: 1px solid var(--c-border); border-radius: 4px;
-  background: var(--c-surface-2); padding: 8px; overflow: auto;
+  flex: 1 1 50%; border: 1px solid #d3ccba; border-radius: 4px;
+  background: #f7f4ec; padding: 8px; overflow: auto;
 }
+.pkc-drawio-preview .pkc-hint { color: #6a705e; }
+.pkc-drawio-preview .pkc-form-error { color: #b0402f; }
 .pkc-drawio-preview svg { width: 100%; height: auto; max-height: 60vh; }
 @media (max-width: 900px) { .pkc-drawio-split { flex-direction: column; } }

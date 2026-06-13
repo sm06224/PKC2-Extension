@@ -79,7 +79,8 @@ graph LR
 export function mountMdNote(root: HTMLElement): void {
   root.replaceChildren();
   root.className = 'pkc-md-root';
-  mermaid.initialize({ startOnLoad: false, securityLevel: 'strict', theme: 'dark' });
+  // プレビューは紙背景(実機フィードバック 2026-06-13)のため明テーマ
+  mermaid.initialize({ startOnLoad: false, securityLevel: 'strict', theme: 'default' });
 
   const header = el('div', 'pkc-md-header');
   header.setAttribute('data-pkc-region', 'md-header');

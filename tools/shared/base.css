@@ -83,6 +83,44 @@ textarea {
   padding: 8px 10px;
 }
 
+/* ------------------------------------- fold menu + paper content (viewers) */
+/* メニュー(接続/索引/ファイル選択)は折りたたみ、コンテンツ読み込み後は
+   描画エリアを主体にする。コンテンツ面はダークにせず「紙」配色にする
+   (2026-06-13 実機フィードバック)。 */
+.pkc-fold {
+  border: 1px solid var(--c-border);
+  border-radius: 4px;
+  background: var(--c-surface);
+}
+.pkc-fold > summary {
+  cursor: pointer;
+  padding: 6px 10px;
+  color: var(--c-fg-dim);
+  font-size: 12px;
+  user-select: none;
+}
+.pkc-fold > summary:hover { color: var(--c-accent); }
+.pkc-fold[open] > summary { border-bottom: 1px solid var(--c-border); }
+.pkc-fold-body { padding: 8px 10px; display: flex; flex-direction: column; gap: 8px; }
+.pkc-fold-body > .pkc-panel { border: none; padding: 0; background: transparent; }
+.pkc-fold-stack { display: flex; flex-direction: column; gap: 10px; }
+.pkc-fold-stack > .pkc-panel { border: none; padding: 0; background: transparent; }
+
+.pkc-statusbar { color: var(--c-fg-dim); font-size: 12px; min-height: 1.2em; padding: 0 2px; }
+
+.pkc-paper {
+  --paper-bg: #f7f4ec;
+  --paper-bg-2: #efe9da;
+  --paper-fg: #20261c;
+  --paper-dim: #6a705e;
+  --paper-border: #d3ccba;
+  background: var(--paper-bg);
+  color: var(--paper-fg);
+  border: 1px solid var(--paper-border);
+  border-radius: 4px;
+}
+.pkc-paper .pkc-hint { color: var(--paper-dim); }
+
 /* ----------------------------------------------------- host connection */
 .pkc-conn-panel {
   background: var(--c-surface);

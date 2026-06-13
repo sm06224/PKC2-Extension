@@ -5,11 +5,17 @@
 .pkc-pptx-title { font-weight: 600; font-size: 15px; }
 .pkc-pptx-indexrow { display: flex; gap: 8px; align-items: baseline; margin: 2px 0; }
 .pkc-pptx-indextitle { flex: 1 1 auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.pkc-pptx-deck { max-height: 70vh; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
+
+/* ---- コンテンツ面(スライド = 紙、描画エリア主体) */
+.pkc-pptx-view { display: flex; flex-direction: column; gap: 8px; }
+.pkc-pptx-deck { display: flex; flex-direction: column; gap: 12px; }
 .pkc-pptx-slide {
-  border: 1px solid var(--c-border); border-radius: 4px;
-  background: var(--c-surface-2); padding: 10px 12px;
+  background: #f7f4ec; color: #20261c;
+  border: 1px solid #d3ccba; border-radius: 4px;
+  padding: 14px 18px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
 }
-.pkc-pptx-slideno { color: var(--c-fg-dim); font-size: 11px; margin-bottom: 4px; }
-.pkc-pptx-slidetitle { font-weight: 700; font-size: 15px; margin-bottom: 6px; border-bottom: 1px solid var(--c-border); padding-bottom: 4px; }
+.pkc-pptx-slideno { color: #6a705e; font-size: 11px; margin-bottom: 4px; }
+.pkc-pptx-slidetitle { font-weight: 700; font-size: 15px; margin-bottom: 6px; border-bottom: 1px solid #d3ccba; padding-bottom: 4px; }
 .pkc-pptx-line { margin: 3px 0 3px 8px; white-space: pre-wrap; word-break: break-word; line-height: 1.6; }
+.pkc-pptx-slide .pkc-hint { color: #6a705e; }

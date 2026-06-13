@@ -50,3 +50,37 @@ export function selectInput(options: ReadonlyArray<{ value: string; label: strin
   }
   return s;
 }
+
+export interface FoldSection {
+  el: HTMLDetailsElement;
+  collapse(): void;
+  expand(): void;
+}
+
+/**
+ * 折りたたみメニュー(details/summary)。ビューア系ツールの
+ * 「コンテンツ主体 UI」用 — 接続・索引・ファイル選択などのメニューを
+ * ここに入れ、コンテンツ読み込み成功時に collapse() する。
+ */
+export function foldSection(label: string, content: HTMLElement, open = true): FoldSection {
+  const d = document.createElement('details');
+  d.className = 'pkc-fold';
+  d.open = open;
+  d.setAttribute('data-pkc-region', 'tool-menu');
+  const s = document.createElement('summary');
+  s.className = 'pkc-fold-summary';
+  s.textContent = label;
+  d.appendChild(s);
+  const body = el('div', 'pkc-fold-body');
+  body.appendChild(content);
+  d.appendChild(body);
+  return {
+    el: d,
+    collapse: () => {
+      d.open = false;
+    },
+    expand: () => {
+      d.open = true;
+    },
+  };
+}

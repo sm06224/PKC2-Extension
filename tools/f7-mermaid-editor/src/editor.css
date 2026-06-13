@@ -33,11 +33,13 @@
   flex: 1 1 auto;
   min-width: 0;
   overflow: auto;
-  background: var(--c-surface);
-  border: 1px solid var(--c-border);
+  /* コンテンツ面は紙配色(実機フィードバック 2026-06-13) */
+  background: #f7f4ec;
+  border: 1px solid #d3ccba;
   border-radius: 4px;
   padding: 12px;
 }
+.pkc-mmd-preview .pkc-hint { color: #6a705e; }
 .pkc-mmd-preview svg { max-width: 100%; height: auto; }
 
 .pkc-mmd-save { flex: 0 0 auto; }

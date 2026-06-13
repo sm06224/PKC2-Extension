@@ -212,7 +212,7 @@ export function cellsToSvg(cells: MxCell[]): SVGElement {
     const p2 = center(t.geometry);
     svg.appendChild(svgEl('line', {
       x1: String(p1.cx), y1: String(p1.cy), x2: String(p2.cx), y2: String(p2.cy),
-      stroke: safeSvgColor(c.style['strokeColor'], '#8aa07a'),
+      stroke: safeSvgColor(c.style['strokeColor'], '#6a705e'),
       'stroke-width': '1.5',
     }));
     const label = labelText(c.value);
@@ -222,7 +222,7 @@ export function cellsToSvg(cells: MxCell[]): SVGElement {
         y: String((p1.cy + p2.cy) / 2 - 4),
         'text-anchor': 'middle',
         'font-size': '11',
-        fill: '#c8d8b0',
+        fill: '#20261c',
       });
       text.textContent = label;
       svg.appendChild(text);
@@ -232,8 +232,9 @@ export function cellsToSvg(cells: MxCell[]): SVGElement {
   // 頂点
   for (const v of vertices) {
     const g = v.geometry!;
-    const fill = safeSvgColor(v.style['fillColor'], '#161c12');
-    const stroke = safeSvgColor(v.style['strokeColor'], '#7fbf3f');
+    // fallback は紙背景(明)前提の配色 — 実機フィードバック 2026-06-13
+    const fill = safeSvgColor(v.style['fillColor'], '#ffffff');
+    const stroke = safeSvgColor(v.style['strokeColor'], '#4a5240');
     const isEllipse = 'ellipse' in v.style;
     if (isEllipse) {
       const { cx, cy } = center(g);
@@ -255,7 +256,7 @@ export function cellsToSvg(cells: MxCell[]): SVGElement {
         x: String(cx), y: String(cy + 4),
         'text-anchor': 'middle',
         'font-size': '12',
-        fill: '#c8d8b0',
+        fill: '#20261c',
       });
       text.textContent = label;
       svg.appendChild(text);
