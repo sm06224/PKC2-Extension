@@ -12,7 +12,7 @@ import '../../shared/base.css';
 import './editor.css';
 import { ExtChannel, type ContainerProjection, type DeliverPayload, type ProjectionEntry } from '../../shared/ext-channel';
 import { helpButton } from '../../shared/help';
-import { button, el } from '../../shared/ui';
+import { button, el, foldSection, type FoldSection } from '../../shared/ui';
 import { cellsToSvg, extractPages, parseMxGraph, wrapMxfile, type DrawioPage } from './drawio';
 
 const TOOL_NAME = 'pkc2-drawio-editor';
@@ -33,6 +33,7 @@ let channel: ExtChannel | null = null;
 let indexEl: HTMLElement | null = null;
 let editorEl: HTMLElement | null = null;
 let statusEl: HTMLElement | null = null;
+let menuFold: FoldSection | null = null;
 
 interface EditState {
   pages: DrawioPage[];
@@ -146,6 +147,7 @@ function loadText(text: string, label: string): void {
     }
     state = { pages, active: 0, label };
     renderEditor();
+    menuFold?.collapse();
     setStatus(`${label} を編集中`);
   });
 }
@@ -195,13 +197,13 @@ const STARTER = `<mxGraphModel dx="800" dy="600" grid="1" gridSize="10">
   <root>
     <mxCell id="0"/>
     <mxCell id="1" parent="0"/>
-    <mxCell id="2" value="開始" style="rounded=1;fillColor=#1a2413;strokeColor=#7fbf3f" vertex="1" parent="1">
+    <mxCell id="2" value="開始" style="rounded=1;fillColor=#dae8fc;strokeColor=#6c8ebf" vertex="1" parent="1">
       <mxGeometry x="40" y="40" width="120" height="50" as="geometry"/>
     </mxCell>
-    <mxCell id="3" value="次へ" style="ellipse;fillColor=#161c12;strokeColor=#5b8def" vertex="1" parent="1">
+    <mxCell id="3" value="次へ" style="ellipse;fillColor=#d5e8d4;strokeColor=#82b366" vertex="1" parent="1">
       <mxGeometry x="240" y="140" width="120" height="60" as="geometry"/>
     </mxCell>
-    <mxCell id="4" value="flow" style="strokeColor=#8aa07a" edge="1" parent="1" source="2" target="3"/>
+    <mxCell id="4" value="flow" style="strokeColor=#6a705e" edge="1" parent="1" source="2" target="3"/>
   </root>
 </mxGraphModel>`;
 
@@ -241,7 +243,6 @@ export function mountDrawioEditor(root: HTMLElement): { channel: ExtChannel } {
   indexEl.appendChild(
     el('div', 'pkc-hint', connected ? 'PKC2 に接続しました — projection 待機中…' : 'standalone 起動(PKC2 から起動すると添付の索引が出ます)'),
   );
-  root.appendChild(indexEl);
 
   const open = el('div', 'pkc-panel');
   open.setAttribute('data-pkc-region', 'drawio-open');
@@ -256,10 +257,16 @@ export function mountDrawioEditor(root: HTMLElement): { channel: ExtChannel } {
   });
   open.appendChild(file);
   open.appendChild(button('サンプルから開始', 'pkc-btn-small', () => loadText(STARTER, '新規ダイアグラム')));
-  statusEl = el('div', 'pkc-hint');
+
+  const menu = el('div', 'pkc-fold-stack');
+  menu.appendChild(indexEl);
+  menu.appendChild(open);
+  menuFold = foldSection('📂 メニュー — PKC2 索引 / ファイルを開く', menu);
+  root.appendChild(menuFold.el);
+
+  statusEl = el('div', 'pkc-statusbar');
   statusEl.setAttribute('data-pkc-region', 'drawio-status');
-  open.appendChild(statusEl);
-  root.appendChild(open);
+  root.appendChild(statusEl);
 
   root.addEventListener('dragover', (ev) => ev.preventDefault());
   root.addEventListener('drop', (ev) => {

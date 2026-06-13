@@ -19,7 +19,7 @@ import * as pdfjs from 'pdfjs-dist/build/pdf.mjs';
 import workerRaw from 'pdfjs-dist/build/pdf.worker.min.mjs?raw';
 import { ExtChannel, type ContainerProjection, type DeliverPayload, type ProjectionEntry } from '../../shared/ext-channel';
 import { helpButton } from '../../shared/help';
-import { button, el, selectInput } from '../../shared/ui';
+import { button, el, foldSection, selectInput, type FoldSection } from '../../shared/ui';
 
 declare const __PDFJS_VERSION__: string;
 
@@ -70,6 +70,7 @@ let pagesEl: HTMLElement | null = null;
 let statusEl: HTMLElement | null = null;
 let indexEl: HTMLElement | null = null;
 let channel: ExtChannel | null = null;
+let menuFold: FoldSection | null = null;
 let renderSeq = 0;
 
 function setStatus(text: string): void {
@@ -104,6 +105,7 @@ async function renderPdf(): Promise<void> {
     if (doc.numPages > shown) {
       pagesEl.appendChild(el('div', 'pkc-hint', `… 全 ${doc.numPages} ページ中 ${shown} ページまで表示(上限)`));
     }
+    menuFold?.collapse();
     setStatus(`${state.sourceLabel} — ${doc.numPages} ページ(zoom ${Math.round(state.scale * 100)}%)`);
   } catch (ex) {
     if (seq !== renderSeq) return;
@@ -205,7 +207,6 @@ export function mountPdfViewer(root: HTMLElement): { channel: ExtChannel } {
   } else {
     indexEl.appendChild(el('div', 'pkc-hint', 'standalone 起動(PKC2 から起動すると添付の索引が出ます)'));
   }
-  root.appendChild(indexEl);
 
   // ---- standalone 入力
   const open = el('div', 'pkc-panel');
@@ -234,10 +235,16 @@ export function mountPdfViewer(root: HTMLElement): { channel: ExtChannel } {
   row.appendChild(file);
   row.appendChild(zoom);
   open.appendChild(row);
-  statusEl = el('div', 'pkc-hint');
+
+  const menu = el('div', 'pkc-fold-stack');
+  menu.appendChild(indexEl);
+  menu.appendChild(open);
+  menuFold = foldSection('📂 メニュー — PKC2 索引 / ファイルを開く / zoom', menu);
+  root.appendChild(menuFold.el);
+
+  statusEl = el('div', 'pkc-statusbar');
   statusEl.setAttribute('data-pkc-region', 'pdf-status');
-  open.appendChild(statusEl);
-  root.appendChild(open);
+  root.appendChild(statusEl);
 
   // drag & drop
   root.addEventListener('dragover', (ev) => ev.preventDefault());

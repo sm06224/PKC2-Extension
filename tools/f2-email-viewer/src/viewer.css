@@ -5,14 +5,16 @@
 .pkc-eml-title { font-weight: 600; font-size: 15px; }
 .pkc-eml-indexrow, .pkc-eml-attrow { display: flex; gap: 8px; align-items: baseline; margin: 2px 0; }
 .pkc-eml-indextitle, .pkc-eml-attname { flex: 1 1 auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* ---- コンテンツ面(紙配色、描画エリア主体) */
+.pkc-eml-mail { padding: 14px 16px; }
 .pkc-eml-headrow { display: flex; gap: 8px; margin: 2px 0; }
-.pkc-eml-headkey { color: var(--c-fg-dim); min-width: 70px; flex: 0 0 auto; }
+.pkc-eml-headkey { color: var(--paper-dim); min-width: 70px; flex: 0 0 auto; }
 .pkc-eml-headval { word-break: break-word; }
-.pkc-eml-rawheader { font-family: ui-monospace, monospace; font-size: 11px; color: var(--c-fg-dim); word-break: break-all; }
+.pkc-eml-rawheader { font-family: ui-monospace, monospace; font-size: 11px; color: var(--paper-dim); word-break: break-all; }
 .pkc-eml-body {
-  margin: 10px 0 0; padding: 10px; background: var(--c-surface-2);
-  border: 1px solid var(--c-border); border-radius: 4px;
+  margin: 10px 0 0; padding: 10px 12px; background: #fffdf8;
+  border: 1px solid var(--paper-border); border-radius: 4px;
   white-space: pre-wrap; word-break: break-word; font-family: inherit; font-size: 13px;
-  max-height: 50vh; overflow-y: auto;
 }
 .pkc-eml-attachments { margin-top: 10px; }

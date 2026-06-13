@@ -7,13 +7,19 @@
 .pkc-xlsx-indextitle { flex: 1 1 auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .pkc-xlsx-tabs { display: flex; gap: 4px; flex-wrap: wrap; margin: 6px 0; }
 .pkc-xlsx-tab-active { border-color: var(--c-accent); background: #1a2413; }
-.pkc-xlsx-gridbox { overflow: auto; max-height: 65vh; border: 1px solid var(--c-border); border-radius: 4px; }
-.pkc-xlsx-table { border-collapse: collapse; font-size: 12px; }
+
+/* ---- コンテンツ面(グリッド = 紙、描画エリア主体) */
+.pkc-xlsx-gridbox {
+  overflow: auto; max-height: 78vh;
+  background: #fdfbf6; border: 1px solid #d3ccba; border-radius: 4px;
+}
+.pkc-xlsx-table { border-collapse: collapse; font-size: 12px; color: #20261c; }
 .pkc-xlsx-table th, .pkc-xlsx-table td {
-  border: 1px solid var(--c-border); padding: 2px 6px;
+  border: 1px solid #cfc8b6; padding: 2px 6px;
   max-width: 320px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
-.pkc-xlsx-table td { font-family: ui-monospace, monospace; }
-.pkc-xlsx-table thead th { position: sticky; top: 0; background: var(--c-surface-2); color: var(--c-fg-dim); z-index: 1; }
-.pkc-xlsx-rowhead { background: var(--c-surface-2); color: var(--c-fg-dim); text-align: right; position: sticky; left: 0; }
+.pkc-xlsx-table td { font-family: ui-monospace, monospace; background: #fdfbf6; }
+.pkc-xlsx-table thead th { position: sticky; top: 0; background: #ece7d9; color: #6a705e; z-index: 1; }
+.pkc-xlsx-rowhead { background: #ece7d9; color: #6a705e; text-align: right; position: sticky; left: 0; }
 .pkc-xlsx-corner { position: sticky; left: 0; z-index: 2; }
+.pkc-xlsx-gridbox .pkc-hint { padding: 4px 8px; color: #6a705e; }

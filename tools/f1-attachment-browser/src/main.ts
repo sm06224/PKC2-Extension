@@ -12,7 +12,7 @@ import '../../shared/base.css';
 import './viewer.css';
 import { ExtChannel, type ContainerProjection, type DeliverPayload, type ProjectionEntry } from '../../shared/ext-channel';
 import { helpButton } from '../../shared/help';
-import { button, el, selectInput, textInput } from '../../shared/ui';
+import { button, el, foldSection, selectInput, textInput, type FoldSection } from '../../shared/ui';
 
 const TOOL_NAME = 'pkc2-attachment-browser';
 const TOOL_VERSION = '0.1.0';
@@ -206,6 +206,7 @@ let channel: ExtChannel | null = null;
 let indexEl: HTMLElement | null = null;
 let previewEl: HTMLElement | null = null;
 let statusEl: HTMLElement | null = null;
+let menuFold: FoldSection | null = null;
 
 interface BrowserState {
   projection: ContainerProjection | null;
@@ -283,6 +284,7 @@ function onDeliver(d: DeliverPayload): void {
     pre.textContent = d.body ?? '(body なし)';
     box.appendChild(pre);
     previewEl.replaceChildren(box);
+    menuFold?.collapse();
     setStatus(`📥 entry ${d.lid ?? ''} を受信`);
     return;
   }
@@ -297,6 +299,7 @@ function onDeliver(d: DeliverPayload): void {
   }
   const mime = mimeOf({ mime: d.mime, filename: d.filename });
   previewEl.replaceChildren(previewBytes(d.filename ?? d.lid ?? '(無名)', mime, bytes));
+  menuFold?.collapse();
   setStatus(`📥 ${d.filename ?? '(無名)'} を受信(PKC2 の送付ジェスチャ)`);
 }
 
@@ -332,6 +335,8 @@ export function mountAttachmentBrowser(root: HTMLElement): { channel: ExtChannel
   channel = new ExtChannel({ onProjection, onDeliver });
   const connected = channel.start();
 
+  const menu = el('div', 'pkc-fold-stack');
+
   const toolbar = el('div', 'pkc-att-toolbar');
   toolbar.setAttribute('data-pkc-region', 'att-toolbar');
   const search = textInput('検索(名前 / mime)…');
@@ -353,14 +358,14 @@ export function mountAttachmentBrowser(root: HTMLElement): { channel: ExtChannel
     renderIndex();
   });
   toolbar.appendChild(sort);
-  root.appendChild(toolbar);
+  menu.appendChild(toolbar);
 
   indexEl = el('div', 'pkc-panel');
   indexEl.setAttribute('data-pkc-region', 'att-index');
   indexEl.appendChild(
     el('div', 'pkc-hint', connected ? 'PKC2 に接続しました — projection 待機中…' : 'standalone 起動(PKC2 から起動すると添付の索引が出ます)'),
   );
-  root.appendChild(indexEl);
+  menu.appendChild(indexEl);
 
   const open = el('div', 'pkc-panel');
   open.setAttribute('data-pkc-region', 'att-open');
@@ -373,14 +378,19 @@ export function mountAttachmentBrowser(root: HTMLElement): { channel: ExtChannel
     void f.arrayBuffer().then((buf) => {
       const mime = (f.type || mimeOf({ filename: f.name })).toLowerCase();
       previewEl?.replaceChildren(previewBytes(f.name, mime, new Uint8Array(buf)));
+      menuFold?.collapse();
       setStatus(`📂 ${f.name} を開きました(ローカル)`);
     });
   });
   open.appendChild(file);
-  statusEl = el('div', 'pkc-hint');
+  menu.appendChild(open);
+
+  menuFold = foldSection('📂 メニュー — 索引・検索 / ファイルを開く', menu);
+  root.appendChild(menuFold.el);
+
+  statusEl = el('div', 'pkc-statusbar');
   statusEl.setAttribute('data-pkc-region', 'att-status');
-  open.appendChild(statusEl);
-  root.appendChild(open);
+  root.appendChild(statusEl);
 
   root.addEventListener('dragover', (ev) => ev.preventDefault());
   root.addEventListener('drop', (ev) => {
@@ -390,11 +400,12 @@ export function mountAttachmentBrowser(root: HTMLElement): { channel: ExtChannel
     void f.arrayBuffer().then((buf) => {
       const mime = (f.type || mimeOf({ filename: f.name })).toLowerCase();
       previewEl?.replaceChildren(previewBytes(f.name, mime, new Uint8Array(buf)));
+      menuFold?.collapse();
       setStatus(`📂 ${f.name} を開きました(ローカル)`);
     });
   });
 
-  previewEl = el('div', 'pkc-panel');
+  previewEl = el('div', 'pkc-paper pkc-att-previewwrap');
   previewEl.setAttribute('data-pkc-region', 'att-preview');
   previewEl.appendChild(el('div', 'pkc-hint', '実体を受信(または ローカルファイルを開く)とここにプレビューされます'));
   root.appendChild(previewEl);
