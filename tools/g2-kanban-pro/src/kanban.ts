@@ -9,25 +9,12 @@
  */
 
 import type { ContainerProjection, ProjectionEntry } from '../../shared/ext-channel';
+import { todoMeta, type TodoStatus } from '../../shared/todo-meta';
 
-export type TodoStatus = 'open' | 'done';
-export interface TodoMeta {
-  status: TodoStatus;
-  date?: string; // YYYY-MM-DD
-  archived?: boolean;
-}
-
-/** 防御的に todo メタを読む。todo でない / 壊れていれば null。Pure. */
-export function todoMeta(e: ProjectionEntry): TodoMeta | null {
-  if (e.archetype !== 'todo' || !e.todo) return null;
-  const raw = e.todo;
-  const status: TodoStatus | null = raw.status === 'done' ? 'done' : raw.status === 'open' ? 'open' : null;
-  if (status === null) return null;
-  const m: TodoMeta = { status };
-  if (typeof raw.date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(raw.date)) m.date = raw.date;
-  if (raw.archived === true) m.archived = true;
-  return m;
-}
+// todo メタ読み(todoMeta)・todayISO・isPastDue・setStatusOp は shared/todo-meta が
+// 単一ソース(G3 calendar-pro と共用)。本ファイルは Kanban 固有の列構築のみ。
+export { todoMeta, todayISO, isPastDue, setStatusOp } from '../../shared/todo-meta';
+export type { TodoMeta, TodoStatus } from '../../shared/todo-meta';
 
 export interface KanbanFilter {
   query: string;
@@ -65,25 +52,6 @@ export function kanbanColumns(
     .filter((e) => todoMeta(e)!.status === 'done')
     .sort((a, b) => b.updated_at.localeCompare(a.updated_at));
   return { open, done };
-}
-
-/** PKC2 host の WriteOp 形に厳密一致(features/extension-host/write.ts、R2)。 */
-export function setStatusOp(lid: string, status: TodoStatus): { op: 'set-todo-status'; lid: string; status: TodoStatus } {
-  return { op: 'set-todo-status', lid, status };
-}
-
-/** ローカル日付の YYYY-MM-DD。Pure(引数で固定可能)。 */
-export function todayISO(d: Date = new Date()): string {
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
-  return `${y}-${m}-${day}`;
-}
-
-/** open かつ期日が今日より前。Pure. */
-export function isPastDue(e: ProjectionEntry, today: string): boolean {
-  const m = todoMeta(e);
-  return m !== null && m.status === 'open' && m.date !== undefined && m.date < today;
 }
 
 /** 非 archived todo に付くタグ(頻度降順)。Pure. */
