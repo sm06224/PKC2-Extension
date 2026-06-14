@@ -1,0 +1,44 @@
+/* G2 kanban-pro — layout on top of shared/base.css. */
+
+.pkc-kanban-root {
+  max-width: 1200px; margin: 0 auto; padding: 12px; box-sizing: border-box;
+  height: 100vh; display: flex; flex-direction: column; gap: 8px;
+}
+.pkc-kanban-header { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; flex: 0 0 auto; }
+.pkc-kanban-title { font-weight: 600; font-size: 15px; }
+.pkc-kanban-toolbar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; flex: 0 0 auto; }
+.pkc-kanban-toolbar input[type="text"] { flex: 1 1 200px; }
+.pkc-kanban-toolbar select { flex: 0 0 auto; width: auto; }
+
+.pkc-kanban-board { flex: 1 1 auto; min-height: 0; display: flex; gap: 10px; }
+.pkc-kanban-col {
+  flex: 1 1 50%; min-width: 0; display: flex; flex-direction: column;
+  /* コンテンツ面 = 紙(実機フィードバック流儀) */
+  background: #f7f4ec; border: 1px solid #d3ccba; border-radius: 6px;
+}
+.pkc-kanban-droptarget { outline: 2px dashed #6c8ebf; outline-offset: -2px; }
+.pkc-kanban-colhead {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  padding: 8px 10px; border-bottom: 1px solid #d3ccba; flex: 0 0 auto;
+}
+.pkc-kanban-coltitle { font-weight: 600; color: #20261c; }
+.pkc-kanban-colcount { color: #6a705e; font-size: 12px; background: #e6e0cf; border-radius: 10px; padding: 0 8px; }
+.pkc-kanban-colbody { flex: 1 1 auto; overflow-y: auto; padding: 8px; display: flex; flex-direction: column; gap: 6px; }
+.pkc-kanban-colbody .pkc-hint { color: #6a705e; }
+
+.pkc-kanban-card {
+  background: #fffdf8; border: 1px solid #d3ccba; border-radius: 4px;
+  padding: 7px 9px; cursor: grab; color: #20261c;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.12);
+}
+.pkc-kanban-card:active { cursor: grabbing; }
+.pkc-kanban-selected { border-color: #6c8ebf; box-shadow: 0 0 0 2px #6c8ebf55; }
+.pkc-kanban-cardtitle { display: flex; align-items: center; gap: 6px; }
+.pkc-kanban-titletext { font-weight: 500; word-break: break-word; }
+.pkc-kanban-colordot { width: 9px; height: 9px; border-radius: 50%; flex: 0 0 auto; border: 1px solid #00000022; }
+.pkc-kanban-cardmeta { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 5px; align-items: center; }
+.pkc-kanban-date { font-size: 11px; color: #4a5240; background: #ece7d9; border-radius: 4px; padding: 0 6px; }
+.pkc-kanban-pastdue { color: #fff; background: #c0392b; }
+.pkc-kanban-tag { font-size: 10.5px; background: #e6e0cf; color: #4a5240; border-radius: 8px; padding: 0 6px; }
+
+@media (max-width: 720px) { .pkc-kanban-board { flex-direction: column; } }
