@@ -34,10 +34,16 @@ export interface ProjectionEntry {
   updated_at: string;
   tags?: string[];
   color_tag?: string | null;
-  folder?: string;
   mime?: string;
   filename?: string;
   asset_size?: number;
+  /** 親 folder の lid(structural)。 */
+  folder?: string;
+  /**
+   * archetype==='todo' のみ: host が body から派生(PKC2#831 / RFC #830 R1)。
+   * **description は含まない**(data-minimization)。date/archived は値がある時のみ。
+   */
+  todo?: { status: 'open' | 'done'; date?: string; archived?: boolean };
 }
 
 export interface ProjectionStats {
