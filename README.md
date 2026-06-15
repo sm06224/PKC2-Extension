@@ -44,6 +44,7 @@ PKC2 の **PKC-Message** プロトコル (`pkc-message` v1) を使う **単一 H
 | G2 kanban-pro | #106 | `dist/pkc2-kanban-pro.html` | todo の open/done Kanban。D&D で完了/未完了を切替(`set-todo-status` write op、本文保全)。archived 除外・期日 past due 強調(PKC2#831/#832 の R1/R2 を使用) |
 | G3 calendar-pro | #107 | `dist/pkc2-calendar-pro.html` | todo 期日の月カレンダー + アジェンダ。チェックで完了切替(`set-todo-status`)。past due 強調・アーカイブ表示トグル(R1/R2 使用) |
 | H1 chat-journal | #108 | `dist/pkc2-chat-journal.html` | チャット型セルフメモ(吹き出し UI・Enter 送信・日付セパレータ・#タグ・絵文字)。記録はローカル保持(textlog 互換)。📤 でその日のログを textlog として PKC2 へ作成(`propose`=R5、同意 banner で承認)。未接続/見送り時は 📋 コピー → 手貼りに degrade |
+| H2 ai-assistant | #109 | `dist/pkc2-ai-assistant.html` | AI チャット連携。localhost LLM(ollama/LM Studio)/ 外部 API(OpenAI 互換・BYO key)/ クリップボード手動の 3 方式。文脈は送付ジェスチャで渡した entry のみ(同意モデル)、会話は textlog として propose 保存(R5)。キーは in-memory のみ・外部送信は警告表示・応答は textContent。設計 doc = `ideas/H-communication/H2-ai-assistant.md` |
 | F1 attachment-browser | #59 | `dist/pkc2-attachment-browser.html` | 全添付のメタデータ索引(検索/ソート/MIME アイコン)+ 推奨ビューア振分け。画像・テキストは内蔵プレビュー、実体は送付ジェスチャで受信(host-push) |
 | F2 email-viewer | #60 | `dist/pkc2-email-viewer.html` | .eml を依存ゼロ MIME パーサで整形表示(本文/全ヘッダ/添付保存)。HTML メールは inert テキスト抽出。standalone + T1 受動受信 |
 | F3 docx-viewer | #61 | `dist/pkc2-docx-viewer.html` | .docx を依存ゼロで構造表示(見出し/段落/箇条書き/表、削除履歴は除外)。mammoth 不採用(HTML 描画規律)。standalone + T1 受動受信 |
