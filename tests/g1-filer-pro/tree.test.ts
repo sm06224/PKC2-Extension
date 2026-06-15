@@ -29,6 +29,8 @@ function proj(entries: ProjectionEntry[]): ContainerProjection {
   return {
     containerId: 'c', title: 'box', entries,
     relations: [],
+    restoreCandidates: [],
+    orphanAssets: [],
     stats: { totalEntries: entries.length, byArchetype: {}, totalRelations: 0, totalAssets: 0 },
   };
 }
