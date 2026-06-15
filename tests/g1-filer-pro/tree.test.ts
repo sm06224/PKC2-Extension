@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
   allTags,
   buildFolderTree,
+  canDropFolderInto,
   entriesInFolder,
   entryIcon,
   filterEntries,
@@ -10,7 +11,9 @@ import {
   moveOp,
   parentFolderOf,
   relateOp,
+  renameOp,
   sortEntries,
+  unfileOp,
 } from '../../tools/g1-filer-pro/src/tree';
 import type { ContainerProjection, ProjectionEntry } from '../../tools/shared/ext-channel';
 
@@ -92,9 +95,17 @@ describe('sort / filter / tags', () => {
 });
 
 describe('write op builders / icon', () => {
-  it('moveOp / relateOp は PKC2 host の WriteOp 形に一致', () => {
+  it('moveOp / relateOp / renameOp / unfileOp は PKC2 host の WriteOp 形に一致', () => {
     expect(moveOp('a', 'work')).toEqual({ op: 'move', lid: 'a', folderLid: 'work' });
     expect(relateOp('a', 'b')).toEqual({ op: 'relate', from: 'a', to: 'b' });
+    expect(renameOp('a', '新名称')).toEqual({ op: 'rename', lid: 'a', title: '新名称' });
+    expect(unfileOp('a')).toEqual({ op: 'unfile', lid: 'a' });
+  });
+  it('canDropFolderInto: 自分自身・子孫への移動を弾く', () => {
+    expect(canDropFolderInto(SAMPLE, 'work', 'work')).toBe(false); // 自分自身
+    expect(canDropFolderInto(SAMPLE, 'work', 'proj')).toBe(false); // proj は work の子孫
+    expect(canDropFolderInto(SAMPLE, 'work', 'home')).toBe(true); // 別系統 OK
+    expect(canDropFolderInto(SAMPLE, 'proj', 'home')).toBe(true); // 子フォルダを別へ OK
   });
   it('entryIcon', () => {
     expect(entryIcon('folder')).toBe('📁');

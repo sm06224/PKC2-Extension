@@ -149,6 +149,28 @@ export function relateOp(from: string, to: string): { op: 'relate'; from: string
   return { op: 'relate', from, to };
 }
 
+export function renameOp(lid: string, title: string): { op: 'rename'; lid: string; title: string } {
+  return { op: 'rename', lid, title };
+}
+
+/** entry を folder から外して未整理(root)へ(#830 R7)。 */
+export function unfileOp(lid: string): { op: 'unfile'; lid: string } {
+  return { op: 'unfile', lid };
+}
+
+/**
+ * folder `dragLid` を folder `targetLid` 直下へ移動してよいか(循環防止)。
+ * 自分自身・自分の子孫への移動は不可。host の `moveEntryToFolder` 循環ガードの
+ * クライアント鏡像(送る前に弾いて UX を良くする。host も最終的に no-op で守る)。
+ * Pure。
+ */
+export function canDropFolderInto(p: ContainerProjection, dragLid: string, targetLid: string): boolean {
+  if (dragLid === targetLid) return false;
+  // targetLid の祖先列(root→target、自身含む)に dragLid が居れば、
+  // target は dragLid の子孫 → 移動不可。
+  return !folderPath(p, targetLid).includes(dragLid);
+}
+
 const ARCHETYPE_ICON: Record<string, string> = {
   folder: '📁',
   text: '📝',
