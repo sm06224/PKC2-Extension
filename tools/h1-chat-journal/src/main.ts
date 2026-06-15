@@ -5,23 +5,27 @@
  * Enter 送信 / Shift+Enter 改行 / 日付セパレータ / 時刻表示 / 紙背景。下書きは
  * ローカル保持(B3 と同じ規律、localStorage)。
  *
- * create(日次 textlog の PKC2 反映)は R5(pkc-ext `t:'propose'` → 既存
- * PendingOffer banner)前提で設計しているが、R5 は PKC2 未実装で、R6 gap により
- * Tier S では v1 envelope `record:offer` も届かない(#830)。よって本 v1 は
- * **create を degrade**:ログはローカルに保持し、日次ログを📋クリップボードへ
- * コピーして PKC2 に手貼りする導線を提供する。R5 着地後に `dailyTextlogProposal`
- * を transport に載せれば直接作成へ昇格できる(`chat.ts` 参照)。
+ * create(日次 textlog の PKC2 反映)は **R5(pkc-ext `t:'propose'` → 既存
+ * record:offer 同意 banner、PKC2#833 で着地)** で実現する。📤 ボタンでその日の
+ * textlog を `propose` し、host が**ユーザー同意 banner で accept したら mint**
+ * される(silent 作成は無い)。R6 gap の恒久解でもあり Tier S でも動く。
+ * 確定モデル: 楽観更新せず `propose-result`(accept で assigned_lid)で確定。
  *
- * ExtChannel(pkc-ext)は接続状態の表示のためだけに使う — projection の中身は
- * 描画しない(chat はコンテナ entry を表示しない入力面)。
+ * 接続が無い(standalone)/ ユーザーが banner を dismiss した時のために、
+ * 📋 で日次ログをクリップボードへコピー → 手貼りする degrade 導線も残す。
+ *
+ * ExtChannel(pkc-ext)は接続状態の表示と propose 送受信に使う — projection の
+ * 中身は描画しない(chat はコンテナ entry を表示しない入力面)。
  */
 
 import '../../shared/base.css';
 import './chat.css';
+import { makeCorrelationId } from '../../shared/envelope';
 import { ExtChannel, type ContainerProjection } from '../../shared/ext-channel';
 import { helpButton } from '../../shared/help';
 import { button, el } from '../../shared/ui';
 import {
+  dailyTextlogProposal,
   dayPlainText,
   groupByDay,
   makeMessage,
@@ -49,6 +53,8 @@ let channel: ExtChannel | null = null;
 let logEl: HTMLElement | null = null;
 let inputEl: HTMLTextAreaElement | null = null;
 let statusEl: HTMLElement | null = null;
+/** propose の correlation_id → その日のラベル(propose-result 表示用)。 */
+const pendingProposals = new Map<string, string>();
 
 function setStatus(text: string): void {
   if (statusEl) statusEl.textContent = text;
@@ -133,6 +139,35 @@ function copyDay(day: ChatDay): void {
   }
 }
 
+/**
+ * R5: その日の textlog を PKC2 へ作成提案(propose)。未接続なら 📋 コピーに
+ * degrade。host はユーザー同意 banner で accept したら mint する(楽観更新せず
+ * propose-result で確定)。再送するとその時点の全文で別 entry になる(v1 は
+ * 既存 entry への追記経路が無い — B3 と同じモデル)。
+ */
+function proposeDay(day: ChatDay): void {
+  if (!channel?.isEstablished()) {
+    setStatus('PKC2 未接続のため作成できません — 📋 でコピーして手貼りしてください(standalone)');
+    return;
+  }
+  const cid = makeCorrelationId();
+  const ok = channel.sendPropose(dailyTextlogProposal(day), cid);
+  if (ok) {
+    pendingProposals.set(cid, day.label);
+    setStatus(`📤 「${day.label}」を PKC2 へ作成提案 — 同意 banner で承認してください`);
+  }
+}
+
+function onProposeResult(accepted: boolean, assignedLid: string | null, cid: string | null): void {
+  const label = cid !== null ? pendingProposals.get(cid) : undefined;
+  if (cid !== null) pendingProposals.delete(cid);
+  if (accepted) {
+    setStatus(`✅ 「${label ?? '日次ログ'}」を PKC2 に作成しました${assignedLid ? `(${assignedLid})` : ''}`);
+  } else {
+    setStatus(`「${label ?? '日次ログ'}」の作成は見送られました(banner で却下/dismiss)`);
+  }
+}
+
 function scrollToBottom(): void {
   if (logEl) logEl.scrollTop = logEl.scrollHeight;
 }
@@ -163,8 +198,11 @@ function daySeparator(day: ChatDay): HTMLElement {
   const sep = el('div', 'pkc-chat-daysep');
   sep.setAttribute('data-pkc-date', day.date);
   sep.appendChild(el('span', 'pkc-chat-daylabel', day.label));
+  const send = button('📤 PKC2へ', 'pkc-btn-small pkc-chat-daysend', () => proposeDay(day), 'この日のログを textlog として PKC2 に作成提案');
+  send.setAttribute('data-pkc-action', 'propose-day');
+  sep.appendChild(send);
   sep.appendChild(
-    button('📋', 'pkc-btn-small pkc-chat-daycopy', () => copyDay(day), 'この日のログをコピー(PKC2 へ手貼り)'),
+    button('📋', 'pkc-btn-small pkc-chat-daycopy', () => copyDay(day), 'この日のログをコピー(手貼り用)'),
   );
   return sep;
 }
@@ -188,7 +226,7 @@ function render(): void {
 function onProjection(_p: ContainerProjection): void {
   if (state.connected) return;
   state.connected = true;
-  setStatus('🟢 PKC2 に接続(create は対応待ち。📋 で日次ログをコピーして手貼りできます)');
+  setStatus('🟢 PKC2 に接続 — 📤 で日次ログを textlog として作成できます(同意 banner で承認)');
 }
 
 /* -------------------------------------------------------------- mount */
@@ -206,21 +244,22 @@ export function mountChatJournal(root: HTMLElement): { channel: ExtChannel } {
   header.appendChild(el('span', 'pkc-chat-apptitle', '💬 PKC2 Chat Journal'));
   header.appendChild(el('span', 'pkc-hint', `${TOOL_NAME} v${TOOL_VERSION} — チャット型セルフメモ`));
   header.appendChild(helpButton('Chat Journal', {
-    what: 'LINE のように自分宛てメモを吹き出しで書きためる日誌ツールです。記録はこのブラウザにローカル保存され、日次ログを PKC2 の textlog に手貼りできます。',
+    what: 'LINE のように自分宛てメモを吹き出しで書きためる日誌ツールです。記録はこのブラウザにローカル保存され、その日のログをまとめて PKC2 の textlog として作成できます。',
     how: [
       '下の入力欄に書いて Enter で追記(Shift+Enter で改行)',
       '本文に #タグ を書くとタグとして記録されます(😀 / # ボタンで素早く挿入)',
-      '日付セパレータの 📋 でその日のログをコピー → PKC2 の textlog に貼り付け',
+      '日付セパレータの 📤 でその日のログを PKC2 へ作成提案 → PKC2 の同意 banner で承認',
+      '接続が無い時 / 見送った時は 📋 でコピーして textlog に手貼り',
       '不要な行は ✕ で削除',
     ],
     flow: [
       '記録は textlog 互換の形式({entries:[{text,createdAt,flags}…]})でローカル保持されます',
-      'PKC2 への直接作成は pkc-ext の create(R5 propose)待ちです。届くまでは 📋 コピー → 手貼りで連携します',
+      '📤 はその日の textlog を pkc-ext の propose(R5)で PKC2 に送り、あなたが同意 banner で承認して初めて作成されます(勝手には作られません)',
       'projection は接続確認にだけ使い、コンテナの中身は表示しません(入力に専念)',
     ],
     notes: [
       '記録はこのブラウザの localStorage にあります(別ブラウザ・別端末からは見えません)',
-      'PKC2 への直接作成(新規 entry)はこの拡張ではまだ無効です(PKC2 側 R5 対応待ち #110 / #830)',
+      '同じ日を再度 📤 すると、その時点の全文で別の textlog が作られます(v1 は既存 entry への追記経路が無いため)',
     ],
   }));
   root.appendChild(header);
@@ -270,11 +309,12 @@ export function mountChatJournal(root: HTMLElement): { channel: ExtChannel } {
   render();
   scrollToBottom();
 
-  channel = new ExtChannel({ onProjection });
+  pendingProposals.clear();
+  channel = new ExtChannel({ onProjection, onProposeResult });
   const connected = channel.start();
   setStatus(
     connected
-      ? 'PKC2 を検出 — 接続確認中…(記録はローカルに保存。日次ログは 📋 で手貼り)'
+      ? 'PKC2 を検出 — 接続確認中…(記録はローカルに保存。日次ログは 📤 で作成)'
       : 'standalone 起動 — 記録はこのブラウザにローカル保存されます',
   );
 

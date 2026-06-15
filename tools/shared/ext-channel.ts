@@ -10,6 +10,8 @@
  *   ext  → host  { pkc, v, nonce, t:'write', lid?, ops, correlation_id? }   (T2)
  *   host → ext   { pkc, v, nonce, t:'write-result', ok, correlation_id }
  *   ext  → host  { pkc, v, nonce, t:'hint', kind, lid? }              (軽量ヒント、pull ではない)
+ *   ext  → host  { pkc, v, nonce, t:'propose', offer, correlation_id? }     (#830 R5: 新規 entry 作成提案)
+ *   host → ext   { pkc, v, nonce, t:'propose-result', accepted, assigned_lid, correlation_id }
  *
  * Security — 公式 graph 拡張(PKC2#823)と同じ TOFU gate:
  *  - **Tier S(sandbox 既定、PKC2#821)では host push の `ev.source` が
@@ -128,6 +130,12 @@ export interface ExtChannelCallbacks {
   onWriteResult?: (ok: boolean, correlationId: string | null) => void;
   /** host 側の選択変更(`t:'selected'`、graph/filer が focus を追従)。 */
   onSelected?: (lid: string) => void;
+  /**
+   * `propose`(#830 R5)の結果。host がユーザー同意 banner で accept すると
+   * `accepted=true` + 採番された `assignedLid`、reject/dismiss なら
+   * `accepted=false`。silent 作成は無い(ユーザー accept が必須)。
+   */
+  onProposeResult?: (accepted: boolean, assignedLid: string | null, correlationId: string | null) => void;
 }
 
 /**
@@ -183,6 +191,20 @@ export class ExtChannel {
     return this.post({ t: 'hint', kind, ...(lid !== undefined ? { lid } : {}) });
   }
 
+  /**
+   * R5: 新規 entry の作成提案。`offer` は record:offer payload 同型
+   * (title / body / archetype / tags / source_url …)。host が検証して
+   * 既存の同意 banner に流し、ユーザー accept で初めて mint する。結果は
+   * `onProposeResult`(`t:'propose-result'`)で非同期に返る。未確立なら false。
+   */
+  sendPropose(offer: unknown, correlationId?: string): boolean {
+    return this.post({
+      t: 'propose',
+      offer,
+      ...(correlationId !== undefined ? { correlation_id: correlationId } : {}),
+    });
+  }
+
   isEstablished(): boolean {
     return this.nonce !== null;
   }
@@ -228,6 +250,12 @@ export class ExtChannel {
       this.cb.onWriteResult?.(d['ok'] === true, typeof d['correlation_id'] === 'string' ? d['correlation_id'] : null);
     } else if (d['t'] === 'selected') {
       if (typeof d['lid'] === 'string') this.cb.onSelected?.(d['lid']);
+    } else if (d['t'] === 'propose-result') {
+      this.cb.onProposeResult?.(
+        d['accepted'] === true,
+        typeof d['assigned_lid'] === 'string' ? d['assigned_lid'] : null,
+        typeof d['correlation_id'] === 'string' ? d['correlation_id'] : null,
+      );
     }
   }
 }
