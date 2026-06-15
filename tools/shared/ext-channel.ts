@@ -55,11 +55,29 @@ export interface ProjectionStats {
   totalAssets: number;
 }
 
+/** 削除済みで復元可能な entry の派生メタ(#830 R4、ゴミ箱 UI 用。body は無し)。 */
+export interface ProjectionRestoreCandidate {
+  lid: string;
+  title: string;
+  archetype: string;
+}
+
+/** どの entry からも参照されない孤児アセット(#830 R8、掃除 UI 用。base64 は無し)。 */
+export interface ProjectionOrphanAsset {
+  key: string;
+  /** base64 文字列長(attachment の asset_size と同単位、bytes ≒ ×3/4)。 */
+  size: number;
+}
+
 export interface ContainerProjection {
   containerId: string;
   title: string;
   entries: ProjectionEntry[];
   relations: { from: string; to: string; kind: string }[];
+  /** soft delete 済みで復元可能な entry(#830 R4)。古い host / 旧 projection では未設定。 */
+  restoreCandidates?: ProjectionRestoreCandidate[];
+  /** 孤児アセット(#830 R8)。古い host / 旧 projection では未設定。 */
+  orphanAssets?: ProjectionOrphanAsset[];
   stats: ProjectionStats;
 }
 
@@ -90,10 +108,28 @@ export function parseProjection(v: unknown): ContainerProjection | null {
     relations: Array.isArray(p['relations'])
       ? (p['relations'] as unknown[]).filter(isRelation)
       : [],
+    restoreCandidates: Array.isArray(p['restoreCandidates'])
+      ? (p['restoreCandidates'] as unknown[]).filter(isRestoreCandidate)
+      : [],
+    orphanAssets: Array.isArray(p['orphanAssets'])
+      ? (p['orphanAssets'] as unknown[]).filter(isOrphanAsset)
+      : [],
     stats: isStats(p['stats'])
       ? (p['stats'] as ProjectionStats)
       : { totalEntries: 0, byArchetype: {}, totalRelations: 0, totalAssets: 0 },
   };
+}
+
+function isRestoreCandidate(v: unknown): v is ProjectionRestoreCandidate {
+  if (v === null || typeof v !== 'object') return false;
+  const r = v as Record<string, unknown>;
+  return typeof r['lid'] === 'string' && typeof r['title'] === 'string' && typeof r['archetype'] === 'string';
+}
+
+function isOrphanAsset(v: unknown): v is ProjectionOrphanAsset {
+  if (v === null || typeof v !== 'object') return false;
+  const o = v as Record<string, unknown>;
+  return typeof o['key'] === 'string' && typeof o['size'] === 'number';
 }
 
 function isProjectionEntry(v: unknown): v is ProjectionEntry {

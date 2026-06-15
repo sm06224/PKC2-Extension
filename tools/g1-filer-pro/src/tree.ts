@@ -158,6 +158,29 @@ export function unfileOp(lid: string): { op: 'unfile'; lid: string } {
   return { op: 'unfile', lid };
 }
 
+/** entry を soft delete(#830 R4、revision 残置で復元可)。 */
+export function deleteOp(lid: string): { op: 'delete'; lid: string } {
+  return { op: 'delete', lid };
+}
+
+/** soft delete 済み entry を復元(#830 R4)。 */
+export function restoreOp(lid: string): { op: 'restore'; lid: string } {
+  return { op: 'restore', lid };
+}
+
+/** 孤児アセットを一括掃除(#830 R8、container 単位・引数なし)。 */
+export function purgeOrphanAssetsOp(): { op: 'purge-orphan-assets' } {
+  return { op: 'purge-orphan-assets' };
+}
+
+/** base64 長 → 人が読めるサイズ表記(概算 bytes = size × 3/4)。Pure。 */
+export function humanSize(base64Len: number): string {
+  const bytes = Math.round((base64Len * 3) / 4);
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
 /**
  * folder `dragLid` を folder `targetLid` 直下へ移動してよいか(循環防止)。
  * 自分自身・自分の子孫への移動は不可。host の `moveEntryToFolder` 循環ガードの

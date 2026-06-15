@@ -190,6 +190,23 @@ describe('defensive parsers', () => {
     const p = parseProjection({ containerId: 'c', entries: [{ lid: 'a', title: 't', archetype: 'text' }, { broken: true }, 7] });
     expect(p?.entries.length).toBe(1);
   });
+
+  it('parseProjection は restoreCandidates / orphanAssets を防御的に取り込む(#830 R4/R8)', () => {
+    const p = parseProjection({
+      containerId: 'c',
+      entries: [],
+      restoreCandidates: [{ lid: 'd', title: 'x', archetype: 'text' }, { bad: 1 }],
+      orphanAssets: [{ key: 'k', size: 12 }, { key: 'noSize' }, 'x'],
+    });
+    expect(p?.restoreCandidates).toEqual([{ lid: 'd', title: 'x', archetype: 'text' }]);
+    expect(p?.orphanAssets).toEqual([{ key: 'k', size: 12 }]);
+  });
+
+  it('parseProjection は欠落時に空配列(古い host 互換)', () => {
+    const p = parseProjection({ containerId: 'c', entries: [] });
+    expect(p?.restoreCandidates).toEqual([]);
+    expect(p?.orphanAssets).toEqual([]);
+  });
   it('parseDeliver rejects unknown kinds and non-objects', () => {
     expect(parseDeliver({ kind: 'other' })).toBeNull();
     expect(parseDeliver('x')).toBeNull();

@@ -194,3 +194,47 @@ describe('未整理へ戻す(未整理行への drop → unfile op)', () => {
     expect(writes()[0]!['ops']).toEqual([{ op: 'unfile', lid: 'a' }]);
   });
 });
+
+/* --------------------------------------------------- G1v2b (#830 R4·R8) */
+
+describe('削除(soft delete → delete op)', () => {
+  it('行の 🗑 で delete を送る', () => {
+    (root.querySelector('[data-pkc-lid="a"] [data-pkc-action="delete"]') as HTMLElement).click();
+    expect(writes()[0]!['ops']).toEqual([{ op: 'delete', lid: 'a' }]);
+  });
+
+  it('チェック済みを一括削除 → delete ops', () => {
+    toggleCheck('a');
+    toggleCheck('b');
+    (root.querySelector('[data-pkc-action="batch-delete"]') as HTMLElement).click();
+    expect(writes()[0]!['ops']).toEqual([{ op: 'delete', lid: 'a' }, { op: 'delete', lid: 'b' }]);
+  });
+});
+
+describe('ゴミ箱 / 孤児アセット(restoreCandidates / orphanAssets)', () => {
+  beforeEach(() => {
+    channel.handleMessage(fromHost({
+      t: 'projection',
+      projection: {
+        ...PROJECTION,
+        restoreCandidates: [{ lid: 'del1', title: '消したメモ', archetype: 'text' }],
+        orphanAssets: [{ key: 'asset-x', size: 4000 }, { key: 'asset-y', size: 8 }],
+      },
+    }));
+  });
+
+  it('ゴミ箱スコープで復元候補が出て、復元で restore op', () => {
+    (root.querySelector('[data-pkc-action="trash-scope"]') as HTMLElement).click();
+    const trashRow = region('filer-list').querySelector('[data-pkc-trash="del1"]');
+    expect(trashRow).not.toBeNull();
+    (trashRow!.querySelector('[data-pkc-action="restore"]') as HTMLElement).click();
+    expect(writes()[0]!['ops']).toEqual([{ op: 'restore', lid: 'del1' }]);
+  });
+
+  it('孤児アセットスコープで一覧が出て、掃除で purge-orphan-assets op', () => {
+    (root.querySelector('[data-pkc-action="orphans-scope"]') as HTMLElement).click();
+    expect(region('filer-list').querySelector('[data-pkc-orphan="asset-x"]')).not.toBeNull();
+    (root.querySelector('[data-pkc-action="purge-orphans"]') as HTMLElement).click();
+    expect(writes()[0]!['ops']).toEqual([{ op: 'purge-orphan-assets' }]);
+  });
+});

@@ -18,7 +18,13 @@
 import '../../shared/base.css';
 import './filer.css';
 import { makeCorrelationId } from '../../shared/envelope';
-import { ExtChannel, type ContainerProjection, type ProjectionEntry } from '../../shared/ext-channel';
+import {
+  ExtChannel,
+  type ContainerProjection,
+  type ProjectionEntry,
+  type ProjectionOrphanAsset,
+  type ProjectionRestoreCandidate,
+} from '../../shared/ext-channel';
 import { helpButton } from '../../shared/help';
 import { button, el, selectInput, textInput } from '../../shared/ui';
 import {
@@ -26,14 +32,18 @@ import {
   allTags,
   buildFolderTree,
   canDropFolderInto,
+  deleteOp,
   entriesInFolder,
   entryIcon,
   filterEntries,
   folderPath,
+  humanSize,
   moveOp,
   parentFolderOf,
+  purgeOrphanAssetsOp,
   relateOp,
   renameOp,
+  restoreOp,
   sortEntries,
   unfileOp,
   type FolderNode,
@@ -44,7 +54,10 @@ const TOOL_NAME = 'pkc2-filer-pro';
 const TOOL_VERSION = '0.1.0';
 
 const ALL = '__all__';
-type Scope = typeof ALL | string | null; // '__all__' / folder lid / null(未整理)
+const TRASH = '__trash__';
+const ORPHANS = '__orphans__';
+// '__all__' / '__trash__' / '__orphans__' / folder lid / null(未整理)
+type Scope = typeof ALL | typeof TRASH | typeof ORPHANS | string | null;
 
 interface FilerState {
   projection: ContainerProjection | null;
@@ -165,6 +178,53 @@ function isFolderLid(p: ContainerProjection, lid: string): boolean {
   return p.entries.some((e) => e.lid === lid && e.archetype === 'folder');
 }
 
+/** entry 群を soft delete(#830 R4、ゴミ箱から復元可)。1 write にまとめる。 */
+function requestDeleteMany(lids: string[]): boolean {
+  if (!channel?.isEstablished()) {
+    setStatus('PKC2 未接続のため削除できません(standalone)');
+    return false;
+  }
+  if (lids.length === 0) return false;
+  const cid = makeCorrelationId();
+  const ok = channel.sendWrite(lids.map((lid) => deleteOp(lid)), lids[0], cid);
+  if (ok) {
+    pendingWrites.set(cid, `${lids.length} 件を削除`);
+    setStatus(`🗑 ${lids.length} 件を削除(ゴミ箱から復元できます)— PKC2 が検証して反映します`);
+    state.checkedLids.clear();
+  }
+  return ok;
+}
+
+/** soft delete 済み entry を復元(#830 R4)。 */
+function requestRestore(lid: string): boolean {
+  if (!channel?.isEstablished()) {
+    setStatus('PKC2 未接続のため復元できません(standalone)');
+    return false;
+  }
+  const cid = makeCorrelationId();
+  const ok = channel.sendWrite([restoreOp(lid)], lid, cid);
+  if (ok) {
+    pendingWrites.set(cid, '復元');
+    setStatus('↩️ 復元を要求しました — PKC2 が検証して反映します');
+  }
+  return ok;
+}
+
+/** 孤児アセットを一括掃除(#830 R8、container 単位)。 */
+function requestPurgeOrphans(): boolean {
+  if (!channel?.isEstablished()) {
+    setStatus('PKC2 未接続のため掃除できません(standalone)');
+    return false;
+  }
+  const cid = makeCorrelationId();
+  const ok = channel.sendWrite([purgeOrphanAssetsOp()], undefined, cid);
+  if (ok) {
+    pendingWrites.set(cid, '孤児アセットの掃除');
+    setStatus('🧹 孤児アセットの一括掃除を要求しました — PKC2 が検証して反映します');
+  }
+  return ok;
+}
+
 function requestRelate(from: string, to: string): boolean {
   if (!channel?.isEstablished()) {
     setStatus('PKC2 未接続のため関連付けできません(standalone)');
@@ -199,6 +259,8 @@ function renderCrumb(): void {
   if (!p) return;
   const parts: Array<{ label: string; scope: Scope }> = [{ label: '📦 すべて', scope: ALL }];
   if (state.scope === null) parts.push({ label: '🗂 未整理', scope: null });
+  else if (state.scope === TRASH) parts.push({ label: '🗑 ゴミ箱', scope: TRASH });
+  else if (state.scope === ORPHANS) parts.push({ label: '🧹 孤児アセット', scope: ORPHANS });
   else if (typeof state.scope === 'string' && state.scope !== ALL) {
     for (const lid of folderPath(p, state.scope)) {
       const f = p.entries.find((e) => e.lid === lid);
@@ -389,6 +451,33 @@ function renderTree(): void {
   unRow.setAttribute('data-pkc-action', 'unfile-target');
   treeEl.appendChild(unRow);
 
+  // ---- ゴミ箱(#830 R4)/ 孤児アセット(#830 R8)の特殊スコープ行
+  const specialRow = (icon: string, label: string, scopeVal: Scope, count: number): HTMLElement => {
+    const row = el('div', 'pkc-filer-folderrow');
+    row.style.paddingLeft = '4px';
+    if (state.scope === scopeVal) row.classList.add('pkc-filer-active');
+    row.appendChild(el('span', 'pkc-filer-twisty', '·'));
+    row.appendChild(el('span', 'pkc-filer-foldericon', icon));
+    row.appendChild(el('span', 'pkc-filer-foldername', label));
+    row.appendChild(el('span', 'pkc-filer-foldercount', String(count)));
+    row.addEventListener('click', () => {
+      state.scope = scopeVal;
+      renderList();
+      renderCrumb();
+      renderTree();
+    });
+    return row;
+  };
+  const trashRow = specialRow('🗑', 'ゴミ箱', TRASH, (p.restoreCandidates ?? []).length);
+  trashRow.setAttribute('data-pkc-action', 'trash-scope');
+  treeEl.appendChild(trashRow);
+  const orphans = p.orphanAssets ?? [];
+  if (orphans.length > 0) {
+    const orphanRow = specialRow('🧹', '孤児アセット', ORPHANS, orphans.length);
+    orphanRow.setAttribute('data-pkc-action', 'orphans-scope');
+    treeEl.appendChild(orphanRow);
+  }
+
   for (const root of buildFolderTree(p)) renderTreeNode(root, 0, treeEl);
 }
 
@@ -457,6 +546,13 @@ function entryRow(e: ProjectionEntry): HTMLElement {
   relateBtn.setAttribute('data-pkc-action', 'relate');
   row.appendChild(relateBtn);
 
+  const delBtn = button('🗑', 'pkc-btn-small', (ev?: unknown) => {
+    (ev as Event | undefined)?.stopPropagation?.();
+    requestDeleteMany([e.lid]);
+  }, '削除(ゴミ箱へ・復元可)');
+  delBtn.setAttribute('data-pkc-action', 'delete');
+  row.appendChild(delBtn);
+
   // single click = select(同期)、double click = open(前面化)。
   // rename 編集中(name が input)は選択ハンドラを付けない。
   if (state.renamingLid !== e.lid) {
@@ -485,12 +581,67 @@ function entryRow(e: ProjectionEntry): HTMLElement {
   return row;
 }
 
+/** ゴミ箱(#830 R4): soft delete 済みの復元候補を 復元 ボタン付きで一覧。 */
+function renderTrashList(items: ProjectionRestoreCandidate[]): void {
+  if (!listEl) return;
+  listEl.appendChild(el('div', 'pkc-filer-listhead', `🗑 ゴミ箱 — ${items.length} 件(復元できます)`));
+  if (items.length === 0) {
+    listEl.appendChild(el('div', 'pkc-hint', 'ゴミ箱は空です'));
+    return;
+  }
+  for (const it of items) {
+    const row = el('div', 'pkc-filer-entryrow');
+    row.setAttribute('data-pkc-trash', it.lid);
+    row.appendChild(el('span', 'pkc-filer-entryicon', entryIcon(it.archetype)));
+    row.appendChild(el('span', 'pkc-filer-entryname', it.title || '(無題)'));
+    row.appendChild(el('span', 'pkc-filer-entrymeta', it.archetype));
+    const restoreBtn = button('↩️ 復元', 'pkc-btn-small', () => requestRestore(it.lid), '復元');
+    restoreBtn.setAttribute('data-pkc-action', 'restore');
+    row.appendChild(restoreBtn);
+    listEl.appendChild(row);
+  }
+}
+
+/** 孤児アセット(#830 R8): key + サイズを一覧 + 一括掃除。base64 本体は来ない。 */
+function renderOrphanList(items: ProjectionOrphanAsset[]): void {
+  if (!listEl) return;
+  const total = items.reduce((s, o) => s + o.size, 0);
+  listEl.appendChild(el('div', 'pkc-filer-listhead', `🧹 孤児アセット — ${items.length} 件 / 約 ${humanSize(total)}`));
+  if (items.length === 0) {
+    listEl.appendChild(el('div', 'pkc-hint', '孤児アセットはありません'));
+    return;
+  }
+  const bar = el('div', 'pkc-filer-batchbar');
+  bar.setAttribute('data-pkc-region', 'filer-batch');
+  bar.appendChild(el('span', 'pkc-hint', 'どの entry からも参照されていないアセットです。'));
+  const purgeBtn = button(`🧹 全部掃除(${items.length})`, 'pkc-btn-small', () => requestPurgeOrphans());
+  purgeBtn.setAttribute('data-pkc-action', 'purge-orphans');
+  bar.appendChild(purgeBtn);
+  listEl.appendChild(bar);
+  for (const o of items) {
+    const row = el('div', 'pkc-filer-entryrow');
+    row.setAttribute('data-pkc-orphan', o.key);
+    row.appendChild(el('span', 'pkc-filer-entryicon', '🧩'));
+    row.appendChild(el('span', 'pkc-filer-entryname', o.key));
+    row.appendChild(el('span', 'pkc-filer-entrymeta', humanSize(o.size)));
+    listEl.appendChild(row);
+  }
+}
+
 function renderList(): void {
   if (!listEl) return;
   listEl.replaceChildren();
   const p = state.projection;
   if (!p) {
     listEl.appendChild(el('div', 'pkc-hint', 'projection 待機中…'));
+    return;
+  }
+  if (state.scope === TRASH) {
+    renderTrashList(p.restoreCandidates ?? []);
+    return;
+  }
+  if (state.scope === ORPHANS) {
+    renderOrphanList(p.orphanAssets ?? []);
     return;
   }
   const base = scopeEntries(p);
@@ -510,6 +661,9 @@ function renderList(): void {
     const unfileBtn = button('🗂 未整理へ', 'pkc-btn-small', () => requestUnfileMany([...state.checkedLids]));
     unfileBtn.setAttribute('data-pkc-action', 'batch-unfile');
     bar.appendChild(unfileBtn);
+    const delBtn = button('🗑 削除', 'pkc-btn-small', () => requestDeleteMany([...state.checkedLids]));
+    delBtn.setAttribute('data-pkc-action', 'batch-delete');
+    bar.appendChild(delBtn);
     const clearBtn = button('選択解除', 'pkc-btn-small', () => {
       state.checkedLids.clear();
       renderList();
@@ -533,7 +687,11 @@ function onProjection(p: ContainerProjection): void {
   // 既存の展開状態のうち、消えたフォルダを掃除
   const folderLids = new Set(p.entries.filter((e) => e.archetype === 'folder').map((e) => e.lid));
   for (const lid of [...state.expanded]) if (!folderLids.has(lid)) state.expanded.delete(lid);
-  if (typeof state.scope === 'string' && state.scope !== ALL && !folderLids.has(state.scope)) state.scope = ALL;
+  if (
+    typeof state.scope === 'string'
+    && state.scope !== ALL && state.scope !== TRASH && state.scope !== ORPHANS
+    && !folderLids.has(state.scope)
+  ) state.scope = ALL;
   // 消えた entry を選択状態から掃除(move/unfile/rename 反映後の再 push に追従)
   const liveLids = new Set(p.entries.map((e) => e.lid));
   for (const lid of [...state.checkedLids]) if (!liveLids.has(lid)) state.checkedLids.delete(lid);
@@ -588,20 +746,21 @@ export function mountFilerPro(root: HTMLElement): { channel: ExtChannel } {
       'entry をドラッグして左のフォルダにドロップ → そのフォルダへ移動',
       'チェックボックスで複数選択 → まとめてドラッグで一括移動 / 「未整理へ」で一括フォルダ外し',
       'フォルダ自体もドラッグで別フォルダへ移動できます(自分の子孫へは移動できません)',
-      '各行の ✏️ で名称変更(Enter 確定 / Esc 取消)',
+      '各行の ✏️ で名称変更(Enter 確定 / Esc 取消)、🗑 で削除(ゴミ箱へ・復元可)',
       '左の「🗂 未整理」へドロップ → フォルダから外す(未整理に戻す)',
+      '左の「🗑 ゴミ箱」で削除済みを確認・復元、「🧹 孤児アセット」で未参照アセットを一括掃除',
       'entry 名をクリック = PKC2 で選択(同期)、ダブルクリック = 開く / 🔗 を 2 つで関連付け',
       '上部で検索 / ソート / archetype・タグで絞り込み',
     ],
     flow: [
       '既定で届くのは projection(メタデータのみ — 本文・添付の実体は含まれません)',
-      '移動・名称変更・未整理化・関連付けは pkc-ext の write op(move / rename / unfile / relate)として送り、PKC2 が検証してから反映します(拡張が直接データを書き換えることはありません)',
+      '移動・名称変更・未整理化・削除・復元・関連付けは pkc-ext の write op(move / rename / unfile / delete / restore / relate)として送り、PKC2 が検証してから反映します(拡張が直接データを書き換えることはありません)',
       '一括操作は複数 op を 1 つの write にまとめて送ります(1 件でも検証 NG なら全体が拒否されます)',
     ],
     notes: [
-      'できるのは 閲覧・移動(複数/フォルダ可)・名称変更・未整理へ戻す・関連付け・選択同期 です',
+      'できるのは 閲覧・移動(複数/フォルダ可)・名称変更・未整理へ戻す・削除/復元(ゴミ箱)・孤児アセット掃除・関連付け・選択同期 です',
       'フォルダを自分自身や子孫フォルダへは移動できません(送る前に弾き、PKC2 側でも循環をガードします)',
-      'ゴミ箱(削除・復元)・孤児アセット掃除・本文プレビューは次の更新で対応予定です(issue #110)',
+      '削除は soft delete(ゴミ箱から復元可)。孤児アセットの掃除は参照中のアセットには影響しません',
     ],
     connection: false,
   }));
