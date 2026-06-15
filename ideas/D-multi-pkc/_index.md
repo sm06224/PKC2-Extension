@@ -33,3 +33,4 @@
 | D4 | [mirror](D4-mirror.md) | 全レコード一方向クローン | Tier 3 |
 | D5 | [federation-hub](D5-federation-hub.md) | n 台中継ハブ | Tier 3 |
 | D6 | [diff-merger](D6-diff-merger.md) | 欠落レコードを選択的 offer | Tier 3 |
+| D7 | [remote-collab](D7-remote-collab.md) | **WebRTC でリモート PKC2 の一部に参加**（拡張 = 緩衝地帯） | 設計 |
