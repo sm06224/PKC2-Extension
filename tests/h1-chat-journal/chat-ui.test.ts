@@ -100,14 +100,40 @@ describe('絵文字 / タグのカーソル挿入', () => {
   });
 });
 
-describe('degrade: write を一切送らない / 日次コピー', () => {
-  it('projection を受けても write は送らない(create は R5 待ち)', () => {
+describe('create: R5 propose で PKC2 へ作成', () => {
+  it('📤 でその日の textlog を propose する(write ではない / offer は textlog 形)', () => {
     channel.handleMessage(fromHost({ t: 'projection', projection: PROJECTION }));
-    typeAndSend('記録だけ');
-    expect(sentToHost.filter((m) => m['t'] === 'write')).toHaveLength(0);
+    typeAndSend('きょうの記録 #log');
+    (region('chat-log').querySelector('[data-pkc-action="propose-day"]') as HTMLElement).click();
+    expect(sentToHost.filter((m) => m['t'] === 'write')).toHaveLength(0); // status は専用 op、ここでは無関係
+    const proposes = sentToHost.filter((m) => m['t'] === 'propose');
+    expect(proposes).toHaveLength(1);
+    const offer = proposes[0]!['offer'] as Record<string, unknown>;
+    expect(offer['archetype']).toBe('textlog');
+    const parsed = JSON.parse(offer['body'] as string) as { entries: Array<{ text: string; flags: string[] }> };
+    expect(parsed.entries[0]!.text).toBe('きょうの記録 #log');
+    expect(parsed.entries[0]!.flags).toEqual(['log']);
   });
 
-  it('📋 で日次ログがクリップボードへ渡る', async () => {
+  it('propose-result accept で作成成功の表示(assigned_lid)', () => {
+    channel.handleMessage(fromHost({ t: 'projection', projection: PROJECTION }));
+    typeAndSend('提案する');
+    (region('chat-log').querySelector('[data-pkc-action="propose-day"]') as HTMLElement).click();
+    const cid = (sentToHost.find((m) => m['t'] === 'propose')!['correlation_id']) as string;
+    channel.handleMessage(fromHost({ t: 'propose-result', accepted: true, assigned_lid: 'L7', correlation_id: cid }));
+    expect(region('chat-status').textContent).toContain('作成しました');
+    expect(region('chat-status').textContent).toContain('L7');
+  });
+
+  it('未接続(standalone)では 📤 は propose せず degrade 表示', () => {
+    // projection を渡さない = 未確立
+    typeAndSend('未接続で');
+    (region('chat-log').querySelector('[data-pkc-action="propose-day"]') as HTMLElement).click();
+    expect(sentToHost.filter((m) => m['t'] === 'propose')).toHaveLength(0);
+    expect(region('chat-status').textContent).toContain('未接続');
+  });
+
+  it('📋 で日次ログがクリップボードへ渡る(手貼り degrade は維持)', () => {
     const writeText = vi.fn().mockResolvedValue(undefined);
     Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true });
     typeAndSend('コピー対象');

@@ -36,16 +36,22 @@ const PROJECTION = {
   stats: { totalEntries: 1, byArchetype: { text: 1 }, totalRelations: 0, totalAssets: 0 },
 };
 
-let received: { projections: ContainerProjection[]; delivers: DeliverPayload[]; writeResults: Array<{ ok: boolean; cid: string | null }> };
+let received: {
+  projections: ContainerProjection[];
+  delivers: DeliverPayload[];
+  writeResults: Array<{ ok: boolean; cid: string | null }>;
+  proposeResults: Array<{ accepted: boolean; lid: string | null; cid: string | null }>;
+};
 let ch: ExtChannel;
 
 beforeEach(() => {
   sentToHost.length = 0;
-  received = { projections: [], delivers: [], writeResults: [] };
+  received = { projections: [], delivers: [], writeResults: [], proposeResults: [] };
   ch = new ExtChannel({
     onProjection: (p) => received.projections.push(p),
     onDeliver: (d) => received.delivers.push(d),
     onWriteResult: (ok, cid) => received.writeResults.push({ ok, cid }),
+    onProposeResult: (accepted, lid, cid) => received.proposeResults.push({ accepted, lid, cid }),
   });
   ch.attach(hostWin);
 });
@@ -132,6 +138,16 @@ describe('host-push receive', () => {
     expect(received.writeResults[0]).toEqual({ ok: true, cid: 'c-9' });
   });
 
+  it('propose-result (#830 R5): accept は assigned_lid 付きでコールバックに届く', () => {
+    ch.handleMessage(fromHost({ nonce: 'n-1', t: 'propose-result', accepted: true, assigned_lid: 'L42', correlation_id: 'p-1' }));
+    expect(received.proposeResults[0]).toEqual({ accepted: true, lid: 'L42', cid: 'p-1' });
+  });
+
+  it('propose-result: reject は accepted=false / lid=null', () => {
+    ch.handleMessage(fromHost({ nonce: 'n-1', t: 'propose-result', accepted: false, correlation_id: 'p-2' }));
+    expect(received.proposeResults[0]).toEqual({ accepted: false, lid: null, cid: 'p-2' });
+  });
+
   it('garbage payloads are dropped, channel keeps working', () => {
     ch.handleMessage(fromHost({ nonce: 'n-1', t: 'deliver', payload: { kind: 'nope' } }));
     ch.handleMessage(fromHost({ nonce: 'n-1', t: 'projection', projection: 42 }));
@@ -154,6 +170,18 @@ describe('ext → host send (nonce 同梱)', () => {
     const h = sentToHost[1] as Record<string, unknown>;
     expect(h['t']).toBe('hint');
     expect(h['kind']).toBe('open');
+  });
+
+  it('propose は establish 前は false、後は offer + nonce + correlation_id 同梱', () => {
+    expect(ch.sendPropose({ title: 't', body: 'b' }, 'p-1')).toBe(false);
+    ch.handleMessage(fromHost({ nonce: 'n-1', t: 'projection', projection: PROJECTION }));
+    sentToHost.length = 0;
+    expect(ch.sendPropose({ title: '日次', body: '{}', archetype: 'textlog' }, 'p-1')).toBe(true);
+    const p = sentToHost[0] as Record<string, unknown>;
+    expect(p['t']).toBe('propose');
+    expect(p['nonce']).toBe('n-1');
+    expect(p['correlation_id']).toBe('p-1');
+    expect(p['offer']).toEqual({ title: '日次', body: '{}', archetype: 'textlog' });
   });
 });
 
