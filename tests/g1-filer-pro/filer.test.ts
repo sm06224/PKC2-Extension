@@ -125,3 +125,72 @@ describe('selected push / write-result', () => {
     expect(region('filer-status').textContent).toContain('拒否');
   });
 });
+
+/* ----------------------------------------------------- G1v2 (#110 / R3·R7) */
+
+const check = (lid: string): HTMLInputElement =>
+  root.querySelector(`[data-pkc-lid="${lid}"] [data-pkc-action="check"]`) as HTMLInputElement;
+function toggleCheck(lid: string): void {
+  const c = check(lid);
+  c.checked = true;
+  c.dispatchEvent(new Event('change', { bubbles: true }));
+}
+
+describe('複数選択 → 一括移動 / 一括 unfile', () => {
+  it('チェックすると一括操作バーに件数が出る', () => {
+    toggleCheck('a');
+    toggleCheck('loose');
+    expect(region('filer-batch').textContent).toContain('2 件選択');
+  });
+
+  it('チェック済みをドラッグ → フォルダ drop で全件を 1 write の move ops に', () => {
+    toggleCheck('a');
+    toggleCheck('loose');
+    (root.querySelector('[data-pkc-lid="a"]') as HTMLElement).dispatchEvent(new Event('dragstart', { bubbles: true }));
+    (root.querySelector('[data-pkc-folder="home"]') as HTMLElement).dispatchEvent(new Event('drop', { bubbles: true }));
+    expect(writes()[0]!['ops']).toEqual([
+      { op: 'move', lid: 'a', folderLid: 'home' },
+      { op: 'move', lid: 'loose', folderLid: 'home' },
+    ]);
+  });
+
+  it('「未整理へ」ボタン → チェック済みを unfile ops に', () => {
+    toggleCheck('a');
+    (root.querySelector('[data-pkc-action="batch-unfile"]') as HTMLElement).click();
+    expect(writes()[0]!['ops']).toEqual([{ op: 'unfile', lid: 'a' }]);
+  });
+});
+
+describe('フォルダ自体の移動(循環ガード)', () => {
+  it('フォルダを別フォルダへ drop → move op', () => {
+    (root.querySelector('[data-pkc-folder="home"]') as HTMLElement).dispatchEvent(new Event('dragstart', { bubbles: true }));
+    (root.querySelector('[data-pkc-folder="work"]') as HTMLElement).dispatchEvent(new Event('drop', { bubbles: true }));
+    expect(writes()[0]!['ops']).toEqual([{ op: 'move', lid: 'home', folderLid: 'work' }]);
+  });
+
+  it('フォルダを自分自身へ drop → write を送らずステータス表示', () => {
+    (root.querySelector('[data-pkc-folder="work"]') as HTMLElement).dispatchEvent(new Event('dragstart', { bubbles: true }));
+    (root.querySelector('[data-pkc-folder="work"]') as HTMLElement).dispatchEvent(new Event('drop', { bubbles: true }));
+    expect(writes()).toHaveLength(0);
+    expect(region('filer-status').textContent).toContain('移動できる項目がありません');
+  });
+});
+
+describe('rename(インライン編集 → rename op)', () => {
+  it('✏️ で入力に切替、新名称 + Enter で rename を送る', () => {
+    (root.querySelector('[data-pkc-lid="a"] [data-pkc-action="rename"]') as HTMLElement).click();
+    const input = root.querySelector('[data-pkc-lid="a"] [data-pkc-field="rename-input"]') as HTMLInputElement;
+    expect(input).not.toBeNull();
+    input.value = '新しい名前';
+    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+    expect(writes()[0]!['ops']).toEqual([{ op: 'rename', lid: 'a', title: '新しい名前' }]);
+  });
+});
+
+describe('未整理へ戻す(未整理行への drop → unfile op)', () => {
+  it('entry を 未整理 行へ drop → unfile', () => {
+    (root.querySelector('[data-pkc-lid="a"]') as HTMLElement).dispatchEvent(new Event('dragstart', { bubbles: true }));
+    (root.querySelector('[data-pkc-action="unfile-target"]') as HTMLElement).dispatchEvent(new Event('drop', { bubbles: true }));
+    expect(writes()[0]!['ops']).toEqual([{ op: 'unfile', lid: 'a' }]);
+  });
+});

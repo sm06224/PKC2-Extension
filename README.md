@@ -40,7 +40,7 @@ PKC2 の **PKC-Message** プロトコル (`pkc-message` v1) を使う **単一 H
 | E5 gratitude-journal | #56 | `dist/pkc2-gratitude-journal.html` | 今日の感謝 3 つ → textlog offer |
 | E6 weekly-review | #57 | `dist/pkc2-weekly-review.html` | ISO 週番号タイトルの KPT レビュー → text offer |
 | E7 learning-cards | #58 | `dist/pkc2-learning-cards.html` | フラッシュカード作成・学習・デッキの text offer(往復書式) |
-| G1 filer-pro | #105 | `dist/pkc2-filer-pro.html` | ファイラ作り直し(左ツリー + 右一覧)。検索/ソート/フィルタ + **D&D フォルダ移動**(write op)+ 関連付け + PKC2 と選択同期。閲覧・整理特化(rename/archive/create は #110 待ち) |
+| G1 filer-pro | #105 | `dist/pkc2-filer-pro.html` | ファイラ作り直し(左ツリー + 右一覧)。検索/ソート/フィルタ + **D&D フォルダ移動**(複数選択一括/フォルダ自体も可・循環ガード)+ **rename**(インライン)+ **未整理へ戻す**(unfile)+ 関連付け + PKC2 と選択同期(R3/R7 使用)。ゴミ箱・孤児掃除は #110 で追加予定 |
 | G2 kanban-pro | #106 | `dist/pkc2-kanban-pro.html` | todo の open/done Kanban。D&D で完了/未完了を切替(`set-todo-status` write op、本文保全)。archived 除外・期日 past due 強調(PKC2#831/#832 の R1/R2 を使用) |
 | G3 calendar-pro | #107 | `dist/pkc2-calendar-pro.html` | todo 期日の月カレンダー + アジェンダ。チェックで完了切替(`set-todo-status`)。past due 強調・アーカイブ表示トグル(R1/R2 使用) |
 | H1 chat-journal | #108 | `dist/pkc2-chat-journal.html` | チャット型セルフメモ(吹き出し UI・Enter 送信・日付セパレータ・#タグ・絵文字)。記録はローカル保持(textlog 互換)。📤 でその日のログを textlog として PKC2 へ作成(`propose`=R5、同意 banner で承認)。未接続/見送り時は 📋 コピー → 手貼りに degrade |

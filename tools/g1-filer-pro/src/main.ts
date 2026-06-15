@@ -5,8 +5,11 @@
  * ソート・フィルタし、**D&D でフォルダ移動**(pkc-ext write op `move`)・
  * 関連付け(`relate`)・PKC2 との選択同期(hint / selected)を行う。
  *
- * v1 は現行 pkc-ext で完結する範囲(閲覧 + move/relate + 選択同期)のみ。
- * rename / archive / create / 本文プレビューは host 拡張待ち(G0 #110)。
+ * v2(#110 / #830 R3・R7 採用): **複数選択(チェックボックス)→ 一括移動**、
+ * **フォルダ自体の D&D 移動**(host の `moveEntryToFolder` 循環ガードに依拠 +
+ * クライアント側でも `canDropFolderInto` で送る前に弾く)、**rename**(`rename`
+ * op、インライン編集)、**未整理へ戻す**(`unfile` op、未整理行への drop)。
+ * delete/restore(ゴミ箱)・孤児アセット掃除は別 PR(R4/R8)。
  *
  * セキュリティ: 受信 projection は描画のみ(textContent)。write は host が
  * `validateWriteOps` で検証(G2)。本文・asset は受け取らない(pull 経路なし)。
@@ -22,6 +25,7 @@ import {
   allEntries,
   allTags,
   buildFolderTree,
+  canDropFolderInto,
   entriesInFolder,
   entryIcon,
   filterEntries,
@@ -29,7 +33,9 @@ import {
   moveOp,
   parentFolderOf,
   relateOp,
+  renameOp,
   sortEntries,
+  unfileOp,
   type FolderNode,
   type SortKey,
 } from './tree';
@@ -50,6 +56,10 @@ interface FilerState {
   expanded: Set<string>;
   selectedLid: string | null;
   relateFrom: string | null;
+  /** チェックボックスでの複数選択(一括 move / unfile 用、host 同期はしない)。 */
+  checkedLids: Set<string>;
+  /** インライン rename 中の lid(1 件のみ)。 */
+  renamingLid: string | null;
 }
 
 const state: FilerState = {
@@ -62,6 +72,8 @@ const state: FilerState = {
   expanded: new Set(),
   selectedLid: null,
   relateFrom: null,
+  checkedLids: new Set(),
+  renamingLid: null,
 };
 
 let channel: ExtChannel | null = null;
@@ -69,7 +81,10 @@ let treeEl: HTMLElement | null = null;
 let listEl: HTMLElement | null = null;
 let statusEl: HTMLElement | null = null;
 let crumbEl: HTMLElement | null = null;
-let draggingLid: string | null = null;
+/** ドラッグ中の lid 群(チェック済みを掴めば全部、未チェックなら 1 件)。 */
+let draggingLids: string[] = [];
+/** ドラッグ中がフォルダ 1 件か(循環ガード判定用)。 */
+let draggingFolderLid: string | null = null;
 const pendingWrites = new Map<string, string>();
 
 function setStatus(text: string): void {
@@ -78,19 +93,76 @@ function setStatus(text: string): void {
 
 /* ----------------------------------------------------------- write ops */
 
-function requestMove(lid: string, folderLid: string): boolean {
+/** ドラッグ開始時に「掴む lid 群」を決める(チェック済みに含まれれば全部)。 */
+function dragLidsFor(lid: string): string[] {
+  return state.checkedLids.has(lid) && state.checkedLids.size > 0 ? [...state.checkedLids] : [lid];
+}
+
+/** entry 群を folder へ一括移動。フォルダは循環不可分を除外。1 write にまとめる。 */
+function requestMoveMany(lids: string[], folderLid: string): boolean {
   if (!channel?.isEstablished()) {
     setStatus('PKC2 未接続のため移動できません(standalone)');
     return false;
   }
-  if (lid === folderLid) return false;
+  const p = state.projection;
+  const movable = lids.filter((lid) => {
+    if (lid === folderLid) return false;
+    if (p && isFolderLid(p, lid)) return canDropFolderInto(p, lid, folderLid);
+    return true;
+  });
+  if (movable.length === 0) {
+    setStatus('移動できる項目がありません(自分自身 / 子孫フォルダへは移動不可)');
+    return false;
+  }
   const cid = makeCorrelationId();
-  const ok = channel.sendWrite([moveOp(lid, folderLid)], lid, cid);
+  const ok = channel.sendWrite(movable.map((lid) => moveOp(lid, folderLid)), movable[0], cid);
   if (ok) {
-    pendingWrites.set(cid, `移動`);
-    setStatus('📁 移動を要求しました — PKC2 が検証して反映します');
+    pendingWrites.set(cid, `${movable.length} 件の移動`);
+    setStatus(`📁 ${movable.length} 件の移動を要求しました — PKC2 が検証して反映します`);
+    state.checkedLids.clear();
   }
   return ok;
+}
+
+/** entry 群を未整理(root)へ(#830 R7、unfile op を 1 write にまとめる)。 */
+function requestUnfileMany(lids: string[]): boolean {
+  if (!channel?.isEstablished()) {
+    setStatus('PKC2 未接続のため未整理に戻せません(standalone)');
+    return false;
+  }
+  if (lids.length === 0) return false;
+  const cid = makeCorrelationId();
+  const ok = channel.sendWrite(lids.map((lid) => unfileOp(lid)), lids[0], cid);
+  if (ok) {
+    pendingWrites.set(cid, `${lids.length} 件を未整理へ`);
+    setStatus(`🗂 ${lids.length} 件を未整理へ — PKC2 が検証して反映します`);
+    state.checkedLids.clear();
+  }
+  return ok;
+}
+
+/** title 変更(#830 R3、rename op)。trim 後が空 / 無変更なら送らない。 */
+function requestRename(lid: string, title: string): boolean {
+  const trimmed = title.trim();
+  if (!channel?.isEstablished()) {
+    setStatus('PKC2 未接続のため名称変更できません(standalone)');
+    return false;
+  }
+  if (trimmed === '') {
+    setStatus('名称が空のため変更しません');
+    return false;
+  }
+  const cid = makeCorrelationId();
+  const ok = channel.sendWrite([renameOp(lid, trimmed)], lid, cid);
+  if (ok) {
+    pendingWrites.set(cid, '名称変更');
+    setStatus('✏️ 名称変更を要求しました — PKC2 が検証して反映します');
+  }
+  return ok;
+}
+
+function isFolderLid(p: ContainerProjection, lid: string): boolean {
+  return p.entries.some((e) => e.lid === lid && e.archetype === 'folder');
 }
 
 function requestRelate(from: string, to: string): boolean {
@@ -163,8 +235,25 @@ function folderRow(node: FolderNode, depth: number): HTMLElement {
   }
   row.appendChild(twisty);
   row.appendChild(el('span', 'pkc-filer-foldericon', '📁'));
-  row.appendChild(el('span', 'pkc-filer-foldername', node.title));
+  if (state.renamingLid === node.lid) {
+    row.appendChild(renameInput(node.lid, node.title));
+  } else {
+    row.appendChild(el('span', 'pkc-filer-foldername', node.title));
+  }
   row.appendChild(el('span', 'pkc-filer-foldercount', String(node.descendantEntries)));
+  row.appendChild(renameButton(node.lid));
+
+  // ---- フォルダ自体も drag source(#830: host が循環ガード、こちらも事前に弾く)
+  row.draggable = true;
+  row.addEventListener('dragstart', (ev) => {
+    draggingLids = [node.lid];
+    draggingFolderLid = node.lid;
+    ev.dataTransfer?.setData('text/plain', node.lid);
+  });
+  row.addEventListener('dragend', () => {
+    draggingLids = [];
+    draggingFolderLid = null;
+  });
 
   row.addEventListener('click', () => {
     state.scope = node.lid;
@@ -173,7 +262,7 @@ function folderRow(node: FolderNode, depth: number): HTMLElement {
     renderTree();
   });
 
-  // ---- drop target(entry をこのフォルダへ move)
+  // ---- drop target(entry / フォルダをこのフォルダへ move)
   row.addEventListener('dragover', (ev) => {
     ev.preventDefault();
     row.classList.add('pkc-filer-droptarget');
@@ -182,11 +271,62 @@ function folderRow(node: FolderNode, depth: number): HTMLElement {
   row.addEventListener('drop', (ev) => {
     ev.preventDefault();
     row.classList.remove('pkc-filer-droptarget');
-    const lid = ev.dataTransfer?.getData('text/plain') || draggingLid;
-    if (lid) requestMove(lid, node.lid);
+    const lids = draggingLids.length > 0 ? draggingLids : pickDropLid(ev);
+    if (lids.length > 0) requestMoveMany(lids, node.lid);
   });
 
   return row;
+}
+
+/** dataTransfer から lid を 1 件拾う(dragstart の draggingLids が空の保険)。 */
+function pickDropLid(ev: DragEvent): string[] {
+  const lid = ev.dataTransfer?.getData('text/plain');
+  return lid ? [lid] : [];
+}
+
+/** ✏️ ボタン(クリックでインライン rename 開始)。 */
+function renameButton(lid: string): HTMLButtonElement {
+  const b = button('✏️', 'pkc-btn-small pkc-filer-rename', (ev?: unknown) => {
+    (ev as Event | undefined)?.stopPropagation?.();
+    state.renamingLid = lid;
+    renderTree();
+    renderList();
+  }, '名称変更');
+  b.setAttribute('data-pkc-action', 'rename');
+  return b;
+}
+
+/** インライン rename の input(Enter=確定、Esc/blur=取消)。 */
+function renameInput(lid: string, current: string): HTMLInputElement {
+  const input = textInput('');
+  input.className = 'pkc-filer-renameinput';
+  input.value = current;
+  input.setAttribute('data-pkc-field', 'rename-input');
+  input.addEventListener('click', (ev) => ev.stopPropagation());
+  let committed = false;
+  const finish = (commit: boolean): void => {
+    if (committed) return;
+    committed = true;
+    state.renamingLid = null;
+    if (commit) requestRename(lid, input.value);
+    renderTree();
+    renderList();
+  };
+  input.addEventListener('keydown', (ev) => {
+    if (ev.key === 'Enter') {
+      ev.preventDefault();
+      finish(true);
+    } else if (ev.key === 'Escape') {
+      ev.preventDefault();
+      finish(false);
+    }
+  });
+  input.addEventListener('blur', () => finish(false));
+  setTimeout(() => {
+    input.focus();
+    input.select();
+  }, 0);
+  return input;
 }
 
 function renderTreeNode(node: FolderNode, depth: number, into: HTMLElement): void {
@@ -234,6 +374,19 @@ function renderTree(): void {
     renderCrumb();
     renderTree();
   });
+  // ---- drop target(#830 R7: ここへ落とすと未整理へ戻す = unfile)
+  unRow.addEventListener('dragover', (ev) => {
+    ev.preventDefault();
+    unRow.classList.add('pkc-filer-droptarget');
+  });
+  unRow.addEventListener('dragleave', () => unRow.classList.remove('pkc-filer-droptarget'));
+  unRow.addEventListener('drop', (ev) => {
+    ev.preventDefault();
+    unRow.classList.remove('pkc-filer-droptarget');
+    const lids = draggingLids.length > 0 ? draggingLids : pickDropLid(ev);
+    if (lids.length > 0) requestUnfileMany(lids);
+  });
+  unRow.setAttribute('data-pkc-action', 'unfile-target');
   treeEl.appendChild(unRow);
 
   for (const root of buildFolderTree(p)) renderTreeNode(root, 0, treeEl);
@@ -244,17 +397,38 @@ function entryRow(e: ProjectionEntry): HTMLElement {
   row.setAttribute('data-pkc-lid', e.lid);
   if (e.lid === state.selectedLid) row.classList.add('pkc-filer-selected');
   if (e.lid === state.relateFrom) row.classList.add('pkc-filer-relatefrom');
+  if (state.checkedLids.has(e.lid)) row.classList.add('pkc-filer-checked');
   row.draggable = true;
   row.addEventListener('dragstart', (ev) => {
-    draggingLid = e.lid;
+    draggingLids = dragLidsFor(e.lid);
+    draggingFolderLid = null;
     ev.dataTransfer?.setData('text/plain', e.lid);
   });
   row.addEventListener('dragend', () => {
-    draggingLid = null;
+    draggingLids = [];
   });
 
+  // ---- 複数選択チェックボックス(一括 move / unfile 用)
+  const check = document.createElement('input');
+  check.type = 'checkbox';
+  check.className = 'pkc-filer-check';
+  check.checked = state.checkedLids.has(e.lid);
+  check.setAttribute('data-pkc-action', 'check');
+  check.addEventListener('click', (ev) => ev.stopPropagation());
+  check.addEventListener('change', () => {
+    if (check.checked) state.checkedLids.add(e.lid);
+    else state.checkedLids.delete(e.lid);
+    renderList();
+  });
+  row.appendChild(check);
+
   row.appendChild(el('span', 'pkc-filer-entryicon', entryIcon(e.archetype, e.mime)));
-  const name = el('span', 'pkc-filer-entryname', e.filename ?? e.title);
+  let name: HTMLElement;
+  if (state.renamingLid === e.lid) {
+    name = renameInput(e.lid, e.title);
+  } else {
+    name = el('span', 'pkc-filer-entryname', e.filename ?? e.title);
+  }
   row.appendChild(name);
   if (e.color_tag) {
     const dot = el('span', 'pkc-filer-colordot');
@@ -263,6 +437,8 @@ function entryRow(e: ProjectionEntry): HTMLElement {
   }
   for (const t of (e.tags ?? []).slice(0, 4)) row.appendChild(el('span', 'pkc-filer-tag', t));
   row.appendChild(el('span', 'pkc-filer-entrymeta', `${e.archetype} · ${e.updated_at.slice(0, 10)}`));
+
+  row.appendChild(renameButton(e.lid));
 
   const relateBtn = button(state.relateFrom === e.lid ? '🔗 …' : '🔗', 'pkc-btn-small', (ev2?: unknown) => {
     void ev2;
@@ -281,27 +457,30 @@ function entryRow(e: ProjectionEntry): HTMLElement {
   relateBtn.setAttribute('data-pkc-action', 'relate');
   row.appendChild(relateBtn);
 
-  // single click = select(同期)、double click = open(前面化)
-  let clickTimer: ReturnType<typeof setTimeout> | null = null;
-  name.addEventListener('click', () => {
-    if (clickTimer !== null) return;
-    clickTimer = setTimeout(() => {
-      clickTimer = null;
+  // single click = select(同期)、double click = open(前面化)。
+  // rename 編集中(name が input)は選択ハンドラを付けない。
+  if (state.renamingLid !== e.lid) {
+    let clickTimer: ReturnType<typeof setTimeout> | null = null;
+    name.addEventListener('click', () => {
+      if (clickTimer !== null) return;
+      clickTimer = setTimeout(() => {
+        clickTimer = null;
+        state.selectedLid = e.lid;
+        channel?.sendHint('select', e.lid);
+        renderList();
+      }, 220);
+    });
+    name.addEventListener('dblclick', () => {
+      if (clickTimer !== null) {
+        clearTimeout(clickTimer);
+        clickTimer = null;
+      }
       state.selectedLid = e.lid;
-      channel?.sendHint('select', e.lid);
+      channel?.sendHint('open', e.lid);
+      setStatus(`「${e.title}」を PKC2 で開きました`);
       renderList();
-    }, 220);
-  });
-  name.addEventListener('dblclick', () => {
-    if (clickTimer !== null) {
-      clearTimeout(clickTimer);
-      clickTimer = null;
-    }
-    state.selectedLid = e.lid;
-    channel?.sendHint('open', e.lid);
-    setStatus(`「${e.title}」を PKC2 で開きました`);
-    renderList();
-  });
+    });
+  }
 
   return row;
 }
@@ -321,6 +500,25 @@ function renderList(): void {
   );
   const heading = el('div', 'pkc-filer-listhead', `${shown.length} 件`);
   listEl.appendChild(heading);
+
+  // ---- 一括操作バー(チェック済みがある時だけ)
+  if (state.checkedLids.size > 0) {
+    const bar = el('div', 'pkc-filer-batchbar');
+    bar.setAttribute('data-pkc-region', 'filer-batch');
+    bar.appendChild(el('span', 'pkc-filer-batchcount', `☑️ ${state.checkedLids.size} 件選択`));
+    bar.appendChild(el('span', 'pkc-hint', 'フォルダへドラッグで一括移動 /'));
+    const unfileBtn = button('🗂 未整理へ', 'pkc-btn-small', () => requestUnfileMany([...state.checkedLids]));
+    unfileBtn.setAttribute('data-pkc-action', 'batch-unfile');
+    bar.appendChild(unfileBtn);
+    const clearBtn = button('選択解除', 'pkc-btn-small', () => {
+      state.checkedLids.clear();
+      renderList();
+    });
+    clearBtn.setAttribute('data-pkc-action', 'batch-clear');
+    bar.appendChild(clearBtn);
+    listEl.appendChild(bar);
+  }
+
   if (shown.length === 0) {
     listEl.appendChild(el('div', 'pkc-hint', '該当する entry はありません'));
     return;
@@ -336,6 +534,10 @@ function onProjection(p: ContainerProjection): void {
   const folderLids = new Set(p.entries.filter((e) => e.archetype === 'folder').map((e) => e.lid));
   for (const lid of [...state.expanded]) if (!folderLids.has(lid)) state.expanded.delete(lid);
   if (typeof state.scope === 'string' && state.scope !== ALL && !folderLids.has(state.scope)) state.scope = ALL;
+  // 消えた entry を選択状態から掃除(move/unfile/rename 反映後の再 push に追従)
+  const liveLids = new Set(p.entries.map((e) => e.lid));
+  for (const lid of [...state.checkedLids]) if (!liveLids.has(lid)) state.checkedLids.delete(lid);
+  if (state.renamingLid !== null && !liveLids.has(state.renamingLid)) state.renamingLid = null;
   renderTree();
   renderList();
   renderCrumb();
@@ -366,8 +568,11 @@ export function mountFilerPro(root: HTMLElement): { channel: ExtChannel } {
   state.expanded = new Set();
   state.selectedLid = null;
   state.relateFrom = null;
+  state.checkedLids = new Set();
+  state.renamingLid = null;
   pendingWrites.clear();
-  draggingLid = null;
+  draggingLids = [];
+  draggingFolderLid = null;
 
   root.replaceChildren();
   root.className = 'pkc-filer-root';
@@ -377,22 +582,26 @@ export function mountFilerPro(root: HTMLElement): { channel: ExtChannel } {
   header.appendChild(el('span', 'pkc-filer-title', '🗂️ PKC2 Filer Pro'));
   header.appendChild(el('span', 'pkc-hint', `${TOOL_NAME} v${TOOL_VERSION} — 高機能ファイラ(閲覧・整理)`));
   header.appendChild(helpButton('Filer Pro', {
-    what: 'PKC2 のファイラを拡張側で作り直した高機能版です。フォルダツリーと一覧で閲覧し、ドラッグ&ドロップでフォルダ移動・関連付け・PKC2 本体との選択同期ができます。',
+    what: 'PKC2 のファイラを拡張側で作り直した高機能版です。フォルダツリーと一覧で閲覧し、ドラッグ&ドロップでフォルダ/複数 entry の移動・名称変更・未整理へ戻す・関連付け・PKC2 本体との選択同期ができます。',
     how: [
       'PKC2 から起動すると左にフォルダツリー、右に一覧が出ます',
       'entry をドラッグして左のフォルダにドロップ → そのフォルダへ移動',
-      'entry 名をクリック = PKC2 で選択(同期)、ダブルクリック = 開く',
-      '各行の 🔗 を 2 つの entry で順にクリック → 関連付け',
+      'チェックボックスで複数選択 → まとめてドラッグで一括移動 / 「未整理へ」で一括フォルダ外し',
+      'フォルダ自体もドラッグで別フォルダへ移動できます(自分の子孫へは移動できません)',
+      '各行の ✏️ で名称変更(Enter 確定 / Esc 取消)',
+      '左の「🗂 未整理」へドロップ → フォルダから外す(未整理に戻す)',
+      'entry 名をクリック = PKC2 で選択(同期)、ダブルクリック = 開く / 🔗 を 2 つで関連付け',
       '上部で検索 / ソート / archetype・タグで絞り込み',
     ],
     flow: [
       '既定で届くのは projection(メタデータのみ — 本文・添付の実体は含まれません)',
-      '移動・関連付けは pkc-ext の write op として送り、PKC2 が検証してから反映します(拡張が直接データを書き換えることはありません)',
+      '移動・名称変更・未整理化・関連付けは pkc-ext の write op(move / rename / unfile / relate)として送り、PKC2 が検証してから反映します(拡張が直接データを書き換えることはありません)',
+      '一括操作は複数 op を 1 つの write にまとめて送ります(1 件でも検証 NG なら全体が拒否されます)',
     ],
     notes: [
-      'v1 でできるのは 閲覧・移動・関連付け・選択同期 です',
-      '名称変更・アーカイブ・新規作成・本文プレビューは PKC2 側の機能拡張待ちです(issue #110)',
-      'フォルダ外への「未整理に戻す」移動も現状の write op では未対応です',
+      'できるのは 閲覧・移動(複数/フォルダ可)・名称変更・未整理へ戻す・関連付け・選択同期 です',
+      'フォルダを自分自身や子孫フォルダへは移動できません(送る前に弾き、PKC2 側でも循環をガードします)',
+      'ゴミ箱(削除・復元)・孤児アセット掃除・本文プレビューは次の更新で対応予定です(issue #110)',
     ],
     connection: false,
   }));

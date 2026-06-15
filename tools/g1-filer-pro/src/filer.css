@@ -47,7 +47,24 @@
 .pkc-filer-entrymeta { flex: 0 0 auto; color: var(--paper-dim); font-size: 11px; white-space: nowrap; }
 .pkc-filer-colordot { width: 9px; height: 9px; border-radius: 50%; flex: 0 0 auto; border: 1px solid #00000022; }
 .pkc-filer-tag { flex: 0 0 auto; font-size: 10.5px; background: #e6e0cf; color: #4a5240; border-radius: 8px; padding: 0 6px; }
-.pkc-filer-entryrow .pkc-btn-small { padding: 0 6px; border-color: #cfc8b6; background: #efe9da; color: #4a5240; }
+.pkc-filer-entryrow .pkc-btn-small,
+.pkc-filer-folderrow .pkc-btn-small { padding: 0 6px; border-color: #cfc8b6; background: #efe9da; color: #4a5240; }
+.pkc-filer-check { flex: 0 0 auto; margin: 0; cursor: pointer; }
+.pkc-filer-checked { background: #eef3e1; }
+.pkc-filer-rename { line-height: 1.4; }
+.pkc-filer-renameinput {
+  flex: 1 1 auto; min-width: 0; font: inherit; padding: 1px 4px;
+  border: 1px solid #9bb36b; border-radius: 3px; background: #fffdf6; color: var(--paper-fg);
+}
+/* フォルダ行の ✏️ は普段は控えめ、hover で出す */
+.pkc-filer-folderrow .pkc-filer-rename { visibility: hidden; }
+.pkc-filer-folderrow:hover .pkc-filer-rename { visibility: visible; }
+.pkc-filer-batchbar {
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  margin: 0 0 6px; padding: 4px 6px; border-radius: 3px;
+  background: #e3ecf7; border: 1px solid #b9cbe6;
+}
+.pkc-filer-batchcount { font-weight: 600; color: #2c4a73; }
 
 @media (max-width: 820px) {
   .pkc-filer-split { flex-direction: column; }
