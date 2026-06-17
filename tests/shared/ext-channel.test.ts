@@ -6,10 +6,15 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import {
   ExtChannel,
+  CAP_CORE_RENDER,
   parseDeliver,
   parseProjection,
+  parseRenderResult,
+  parseStylesheet,
   type ContainerProjection,
   type DeliverPayload,
+  type RenderResult,
+  type StylesheetPayload,
 } from '../../tools/shared/ext-channel';
 
 const sentToHost: unknown[] = [];
@@ -210,5 +215,98 @@ describe('defensive parsers', () => {
   it('parseDeliver rejects unknown kinds and non-objects', () => {
     expect(parseDeliver({ kind: 'other' })).toBeNull();
     expect(parseDeliver('x')).toBeNull();
+  });
+
+  it('parseRenderResult: ok + html + headings + correlation を取り込む(SR-18)', () => {
+    const r = parseRenderResult({
+      ok: true,
+      html: '<h1>x</h1>',
+      engine_version: '1.2.0',
+      headings: [{ level: 1, text: 'x' }, { bad: 1 }],
+      correlation_id: 'r-1',
+    });
+    expect(r).toMatchObject({ ok: true, html: '<h1>x</h1>', engineVersion: '1.2.0', correlationId: 'r-1' });
+    expect(r?.headings?.length).toBe(1);
+  });
+
+  it('parseRenderResult: ok 欠落 / 非 object は null', () => {
+    expect(parseRenderResult({ html: 'x' })).toBeNull();
+    expect(parseRenderResult('x')).toBeNull();
+  });
+
+  it('parseStylesheet: css 必須、engine_version は任意', () => {
+    expect(parseStylesheet({ css: 'body{}', engine_version: '1.2.0' })).toEqual({ css: 'body{}', engineVersion: '1.2.0' });
+    expect(parseStylesheet({ css: 'body{}' })).toEqual({ css: 'body{}', engineVersion: '' });
+    expect(parseStylesheet({ engine_version: '1' })).toBeNull();
+  });
+});
+
+describe('SR-18 ホスト・レンダーサービス(借用 render の wire)', () => {
+  let renderResults: RenderResult[];
+  let stylesheets: StylesheetPayload[];
+  let rch: ExtChannel;
+
+  beforeEach(() => {
+    sentToHost.length = 0;
+    renderResults = [];
+    stylesheets = [];
+    rch = new ExtChannel(
+      {
+        onRenderResult: (r) => renderResults.push(r),
+        onStylesheet: (s) => stylesheets.push(s),
+      },
+      { capabilities: [CAP_CORE_RENDER] },
+    );
+    rch.attach(hostWin);
+  });
+
+  it('hello は申告した capability を載せる', () => {
+    const hello = sentToHost[0] as Record<string, unknown>;
+    expect(hello['t']).toBe('hello');
+    expect(hello['capabilities']).toEqual(['core-render']);
+  });
+
+  it('sendRenderRequest は establish 前 false、後は source + opts + correlation + nonce を載せる', () => {
+    expect(rch.sendRenderRequest('# x', 'r-1')).toBe(false);
+    rch.handleMessage(fromHost({ nonce: 'n-1', t: 'projection', projection: PROJECTION }));
+    sentToHost.length = 0;
+    expect(rch.sendRenderRequest('# x', 'r-1', { surface: 'reader', toc: true }, false)).toBe(true);
+    const req = sentToHost[0] as Record<string, unknown>;
+    expect(req['t']).toBe('render-request');
+    expect(req['source']).toBe('# x');
+    expect(req['correlation_id']).toBe('r-1');
+    expect(req['opts']).toEqual({ surface: 'reader', toc: true });
+    expect(req['want_css']).toBe(false);
+    expect(req['nonce']).toBe('n-1');
+  });
+
+  it('render-result(nest 形)が correlation 付きでコールバックに届く', () => {
+    rch.handleMessage(fromHost({ nonce: 'n-1', t: 'projection', projection: PROJECTION }));
+    rch.handleMessage(fromHost({
+      nonce: 'n-1',
+      t: 'render-result',
+      result: { ok: true, html: '<p>hi</p>', engine_version: '1.2.0', correlation_id: 'r-1' },
+    }));
+    expect(renderResults[0]).toMatchObject({ ok: true, html: '<p>hi</p>', correlationId: 'r-1' });
+  });
+
+  it('render-result(top-level 形)も受ける(host 実装未確定への寛容)', () => {
+    rch.handleMessage(fromHost({ nonce: 'n-1', t: 'projection', projection: PROJECTION }));
+    rch.handleMessage(fromHost({ nonce: 'n-1', t: 'render-result', ok: false, reason: 'boom', correlation_id: 'r-2' }));
+    expect(renderResults[0]).toMatchObject({ ok: false, reason: 'boom', correlationId: 'r-2' });
+  });
+
+  it('stylesheet(top-level css)が借用 CSS としてコールバックに届く', () => {
+    rch.handleMessage(fromHost({ nonce: 'n-1', t: 'projection', projection: PROJECTION }));
+    rch.handleMessage(fromHost({ nonce: 'n-1', t: 'stylesheet', css: 'body{color:red}', engine_version: '1.2.0' }));
+    expect(stylesheets[0]).toEqual({ css: 'body{color:red}', engineVersion: '1.2.0' });
+  });
+
+  it('capability 未申告だと hello に capabilities を載せない(後方互換)', () => {
+    sentToHost.length = 0;
+    const plain = new ExtChannel({});
+    plain.attach(hostWin);
+    const hello = sentToHost[0] as Record<string, unknown>;
+    expect('capabilities' in hello).toBe(false);
   });
 });
