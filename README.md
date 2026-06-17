@@ -56,6 +56,7 @@ PKC2 の **PKC-Message** プロトコル (`pkc-message` v1) を使う **単一 H
 | F8 drawio-editor | #66 | `dist/pkc2-drawio-editor.html` | .drawio の XML ソース編集 + 簡易 SVG プレビュー(圧縮保存形式も展開)。保存は非圧縮 mxfile。standalone + T1 受動受信 |
 | F9 md-note | #67 | `dist/pkc2-md-note.html` | Markdown + Mermaid の 3 ペインノート(アウトライン/エディタ/プレビュー)。自作ミニパーサ(生 HTML はテキスト扱い・リンクは http(s) のみ)、本文を text offer(mermaid 同梱 ~3MB) |
 | F10 canvas-sketcher | #68 | `dist/pkc2-canvas-sketcher.html` | 手書きキャンバス(筆圧/undo/redo/消しゴム)→ SVG/PNG ローカル保存。v1 では attachment offer 不可のため standalone 専用(壁 #80) |
+| F11 premium-markdown-viewer | #123 | `dist/pkc2-premium-markdown-viewer.html` | ホストの PKC-Markdown レンダリングコア + base.css を**借りて**美麗描画(エンジン非同梱 ~25KB)。`render-request`/`render-result`/`stylesheet` + capability `core-render`(SR-18 #122)に乗る。未実装の間はローカル簡易フォールバックに degrade。host/フォールバックいずれの HTML も sandboxed iframe(no scripts)で隔離(第 4 surface) |
 
 ### 使い方(A1 message-probe)
 
@@ -107,4 +108,4 @@ dist/             配布物(単一 HTML、コミットする)
 - `PKC2-Extensions/graph/` — 公認グラフ拡張(launcher 経路・単一 HTML ビルドのリファレンス実装)
 - `src/adapter/transport/` — bridge / envelope / profile / handler 実装
 
-> PKC2 本体リポジトリは **このリポジトリでは変更しない**。仕様改定案は本リポジトリの SR issues(#1〜#17)で管理し、必然性が実証されたものだけ PKC2 へ issue 起票する。
+> PKC2 本体リポジトリは **このリポジトリでは変更しない**。仕様改定案は本リポジトリの SR issues(#1〜#17、以降は採番がずれる。SR-18 = #122)で管理し、必然性が実証されたものだけ PKC2 へ issue 起票する。SR-18(ホスト・レンダーサービス)は設計正本が PKC2 #849、実証が F11(#123)。

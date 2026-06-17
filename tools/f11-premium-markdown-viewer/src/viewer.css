@@ -1,0 +1,110 @@
+.pmd-root {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  box-sizing: border-box;
+}
+
+.pmd-header {
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid var(--pkc-border, #333);
+}
+
+.pmd-title {
+  font-weight: 700;
+  font-size: 1.05rem;
+}
+
+.pmd-toolbar {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  flex-wrap: wrap;
+  padding: 0.4rem 0.75rem;
+  border-bottom: 1px solid var(--pkc-border, #333);
+}
+
+.pmd-engine {
+  font-size: 0.8rem;
+  opacity: 0.8;
+}
+
+.pmd-engine[data-pmd-mode='host'] { color: #4ade80; }
+.pmd-engine[data-pmd-mode='fallback'] { color: #fbbf24; }
+
+.pmd-banner {
+  padding: 0.4rem 0.75rem;
+  font-size: 0.85rem;
+  background: #3b2f12;
+  color: #fde68a;
+  border-bottom: 1px solid #5a4716;
+}
+
+.pmd-banner[hidden] { display: none; }
+
+.pmd-body {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.pmd-pane {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  min-width: 0;
+}
+
+.pmd-pane + .pmd-pane {
+  border-left: 1px solid var(--pkc-border, #333);
+}
+
+.pmd-pane-label {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  opacity: 0.65;
+  padding: 0.3rem 0.6rem;
+}
+
+.pmd-editor {
+  flex: 1 1 auto;
+  resize: none;
+  border: 0;
+  outline: none;
+  padding: 0.6rem 0.75rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  background: var(--pkc-bg-elev, #1b1b1f);
+  color: var(--pkc-fg, #e6e6e6);
+}
+
+.pmd-frame {
+  flex: 1 1 auto;
+  width: 100%;
+  border: 0;
+  background: #fff;
+}
+
+.pmd-statusbar {
+  padding: 0.35rem 0.75rem;
+  font-size: 0.8rem;
+  border-top: 1px solid var(--pkc-border, #333);
+  opacity: 0.85;
+}
+
+.pmd-index-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.2rem 0;
+}
+
+.pmd-index-name { flex: 1 1 auto; }
+.pmd-index-arch { font-size: 0.75rem; opacity: 0.6; }

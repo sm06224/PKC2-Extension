@@ -44,3 +44,4 @@ type MessageType =
 | SR-15 | `asset:request/result` | [SR-15-asset-request.md](SR-15-asset-request.md) |
 | SR-16 | `data:changed` 通知 | [SR-16-data-change-notification.md](SR-16-data-change-notification.md) |
 | SR-17 | `selection:changed` 通知 | [SR-17-selection-change-notification.md](SR-17-selection-change-notification.md) |
+| SR-18 | ホスト・レンダーサービス (`render-request`/`render-result`/`stylesheet` + `core-render`) | [SR-18-host-render-service.md](SR-18-host-render-service.md) |

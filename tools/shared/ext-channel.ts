@@ -93,8 +93,47 @@ export interface DeliverPayload {
   correlation_id?: string;
 }
 
+/**
+ * SR-18 / PKC2 #849 — ホスト・レンダーサービス(`core-render` capability)の
+ * 借用 render。すべて additive で、宣言した拡張のみ有効。host が未対応(旧 host /
+ * `core-render` 未交渉)の場合は render-result が返らず、拡張は自前フォールバックへ
+ * degrade する(F11 で実証)。
+ */
+export interface RenderOpts {
+  surface?: 'reader' | 'preview';
+  source_line_anchors?: boolean;
+  strip_dialect?: boolean;
+  toc?: boolean;
+}
+
+export interface TocItem {
+  level: number;
+  text: string;
+  anchor?: string;
+}
+
+/** ホスト → 拡張: `render-result` payload。失敗は `ok:false` + `reason`。 */
+export interface RenderResult {
+  ok: boolean;
+  html?: string;
+  css?: string;
+  engineVersion: string;
+  headings?: TocItem[];
+  reason?: string;
+  correlationId: string | null;
+}
+
+/** ホスト → 拡張: handshake 直後に一度貸与される base.css。 */
+export interface StylesheetPayload {
+  css: string;
+  engineVersion: string;
+}
+
 export const PKC_EXT = 'pkc-ext';
 export const PKC_EXT_V = 1;
+
+/** SR-18: ホストにレンダリングコアを借りる capability 名。 */
+export const CAP_CORE_RENDER = 'core-render';
 
 /** 防御的 parse: projection らしき値を最小検証で受け入れる。 */
 export function parseProjection(v: unknown): ContainerProjection | null {
@@ -160,9 +199,49 @@ export function parseDeliver(v: unknown): DeliverPayload | null {
   return out;
 }
 
+/** 防御的 parse: render-result(SR-18)。 */
+export function parseRenderResult(v: unknown): RenderResult | null {
+  if (v === null || typeof v !== 'object') return null;
+  const r = v as Record<string, unknown>;
+  if (typeof r['ok'] !== 'boolean') return null;
+  const headings = Array.isArray(r['headings'])
+    ? (r['headings'] as unknown[]).filter(isTocItem)
+    : undefined;
+  return {
+    ok: r['ok'],
+    ...(typeof r['html'] === 'string' ? { html: r['html'] } : {}),
+    ...(typeof r['css'] === 'string' ? { css: r['css'] } : {}),
+    engineVersion: typeof r['engine_version'] === 'string' ? r['engine_version'] : '',
+    ...(headings ? { headings } : {}),
+    ...(typeof r['reason'] === 'string' ? { reason: r['reason'] } : {}),
+    correlationId: typeof r['correlation_id'] === 'string' ? r['correlation_id'] : null,
+  };
+}
+
+function isTocItem(v: unknown): v is TocItem {
+  if (v === null || typeof v !== 'object') return false;
+  const t = v as Record<string, unknown>;
+  return typeof t['level'] === 'number' && typeof t['text'] === 'string';
+}
+
+/** 防御的 parse: stylesheet(SR-18)。 */
+export function parseStylesheet(v: unknown): StylesheetPayload | null {
+  if (v === null || typeof v !== 'object') return null;
+  const s = v as Record<string, unknown>;
+  if (typeof s['css'] !== 'string') return null;
+  return {
+    css: s['css'],
+    engineVersion: typeof s['engine_version'] === 'string' ? s['engine_version'] : '',
+  };
+}
+
 export interface ExtChannelCallbacks {
   onProjection?: (p: ContainerProjection) => void;
   onDeliver?: (d: DeliverPayload) => void;
+  /** SR-18: 借用 render の結果。`core-render` 宣言時のみ来る。 */
+  onRenderResult?: (r: RenderResult) => void;
+  /** SR-18: handshake 直後の base.css 貸与。 */
+  onStylesheet?: (s: StylesheetPayload) => void;
   onWriteResult?: (ok: boolean, correlationId: string | null) => void;
   /** host 側の選択変更(`t:'selected'`、graph/filer が focus を追従)。 */
   onSelected?: (lid: string) => void;
@@ -184,8 +263,15 @@ export class ExtChannel {
   /** TOFU で pin した host window(ev.source。Tier S では target と別)。 */
   private hostSource: unknown = null;
   private nonce: string | null = null;
+  /** SR-18: hello で host に申告する capability(例: `core-render`)。 */
+  private readonly capabilities: string[];
 
-  constructor(private readonly cb: ExtChannelCallbacks) {}
+  constructor(
+    private readonly cb: ExtChannelCallbacks,
+    opts?: { capabilities?: string[] },
+  ) {
+    this.capabilities = opts?.capabilities ?? [];
+  }
 
   /** opener / parent へ handshake を開始。 */
   start(): boolean {
@@ -206,7 +292,15 @@ export class ExtChannel {
     this.target = target;
     window.addEventListener('message', (ev) => this.handleMessage(ev));
     try {
-      target.postMessage({ pkc: PKC_EXT, v: PKC_EXT_V, t: 'hello' }, targetOrigin());
+      target.postMessage(
+        {
+          pkc: PKC_EXT,
+          v: PKC_EXT_V,
+          t: 'hello',
+          ...(this.capabilities.length > 0 ? { capabilities: this.capabilities } : {}),
+        },
+        targetOrigin(),
+      );
     } catch {
       /* host torn down */
     }
@@ -238,6 +332,27 @@ export class ExtChannel {
       t: 'propose',
       offer,
       ...(correlationId !== undefined ? { correlation_id: correlationId } : {}),
+    });
+  }
+
+  /**
+   * SR-18: PKC-Markdown ソースの HTML 化を host に要求する。結果は
+   * `onRenderResult`(`t:'render-result'`)で `correlation_id` を相関して返る。
+   * `core-render` 未交渉 / 旧 host では応答が無いので、呼び出し側は timeout で
+   * フォールバック描画へ degrade する。未確立なら false。
+   */
+  sendRenderRequest(
+    source: string,
+    correlationId: string,
+    opts?: RenderOpts,
+    wantCss?: boolean,
+  ): boolean {
+    return this.post({
+      t: 'render-request',
+      source,
+      correlation_id: correlationId,
+      ...(opts !== undefined ? { opts } : {}),
+      ...(wantCss !== undefined ? { want_css: wantCss } : {}),
     });
   }
 
@@ -284,6 +399,13 @@ export class ExtChannel {
       if (payload) this.cb.onDeliver?.(payload);
     } else if (d['t'] === 'write-result') {
       this.cb.onWriteResult?.(d['ok'] === true, typeof d['correlation_id'] === 'string' ? d['correlation_id'] : null);
+    } else if (d['t'] === 'render-result') {
+      // host 実装は未確定(SR-18 go 待ち)。nest 形 / top-level 形の両方を受ける。
+      const r = parseRenderResult(d['result'] ?? d['payload'] ?? d);
+      if (r) this.cb.onRenderResult?.(r);
+    } else if (d['t'] === 'stylesheet') {
+      const s = parseStylesheet(d['stylesheet'] ?? d['payload'] ?? d);
+      if (s) this.cb.onStylesheet?.(s);
     } else if (d['t'] === 'selected') {
       if (typeof d['lid'] === 'string') this.cb.onSelected?.(d['lid']);
     } else if (d['t'] === 'propose-result') {
